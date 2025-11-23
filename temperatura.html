@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Temperatura - FlashTemp</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #124271;
+            color: white;
+            text-align: center;
+            padding: 50px;
+            background-image: url(https://cdn.pixabay.com/photo/2023/07/08/04/58/sunset-8113697_1280.jpg);
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            min-height: 100vh;
+            margin: 0;
+        }
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        .temp-value {
+            font-size: 4rem;
+            font-weight: bold;
+            color: #ffeb3b;
+            margin: 40px 0;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.7);
+        }
+        a {
+            color: #bcddff;
+            text-decoration: none;
+            font-size: 1.2rem;
+            padding: 10px 20px;
+            border: 2px solid #bcddff;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        a:hover {
+            background: #bcddff;
+            color: #124271;
+        }
+        .container {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 15px;
+            max-width: 600px;
+            margin: 0 auto;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌡️ Datos de Temperatura</h1>
+        <p>Aquí irán las gráficas y datos detallados</p>
+        
+        <div class="temp-value" id="tempActual">-- °C</div>
+        
+        <a href="https://flashtemp.netlify.app">← Volver al Inicio</a>
+    </div>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBm2mXJJpJZulKtTfLhoPX2-f2KhzdnSQw",
+            authDomain: "flashtemp-87a59.firebaseapp.com",
+            databaseURL: "https://flashtemp-87a59-default-rtdb.firebaseio.com",
+            projectId: "flashtemp-87a59",
+            storageBucket: "flashtemp-87a59.firebasestorage.app",
+            messagingSenderId: "383528508510",
+            appId: "1:383528508510:web:76a8cc4a8cb55c9c9928cf"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        
+        firebase.database().ref('temperatura').on('value', (snapshot) => {
+            const temp = snapshot.val();
+            if (temp !== null) {
+                document.getElementById('tempActual').innerText = temp + " °C";
+            }
+        });
+    </script>
+</body>
+</html>
