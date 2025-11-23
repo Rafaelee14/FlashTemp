@@ -53,6 +53,7 @@
             padding: 30px;
             border-radius: 12px;
             backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             border: 2px solid rgba(255,255,255,0.3);
             box-shadow: 0 8px 32px rgba(0,0,0,0.3);
             transition: all 0.3s ease;
@@ -116,6 +117,42 @@
             cursor: pointer;
         }
     </style>
+
+    <script>
+        // Configuración de Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBm2mXJJpJZulKtTfLhoPX2-f2KhzdnSQw",
+            authDomain: "flashtemp-87a59.firebaseapp.com",
+            databaseURL: "https://flashtemp-87a59-default-rtdb.firebaseio.com",
+            projectId: "flashtemp-87a59",
+            storageBucket: "flashtemp-87a59.firebasestorage.app",
+            messagingSenderId: "383528508510",
+            appId: "1:383528508510:web:76a8cc4a8cb55c9c9928cf"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        
+        console.log("🔥 Firebase configurado correctamente");
+        
+        // Escuchar temperatura
+        firebase.database().ref('temperatura').on('value', (snapshot) => {
+            const temp = snapshot.val();
+            console.log("🌡️ Temperatura:", temp);
+            if (temp !== null) {
+                document.getElementById('temperaturaActual').innerText = temp + " °C";
+            }
+        });
+
+        // Escuchar humedad
+        firebase.database().ref('humedad').on('value', (snapshot) => {
+            const hum = snapshot.val();
+            console.log("💧 Humedad:", hum);
+            if (hum !== null) {
+                document.getElementById('humedadActual').innerText = hum + " %";
+            }
+        });
+    </script>
 </head>
 <body>
     <section>
@@ -140,39 +177,5 @@
             </div>
         </a>
     </section>
-
-    <!-- Firebase Configuration -->
-    <script>
-        // Configuración de Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyBm2mXJJpJZulKtTfLhoPX2-f2KhzdnSQw",
-            authDomain: "flashtemp-87a59.firebaseapp.com",
-            databaseURL: "https://flashtemp-87a59-default-rtdb.firebaseio.com",
-            projectId: "flashtemp-87a59",
-            storageBucket: "flashtemp-87a59.firebasestorage.app",
-            messagingSenderId: "383528508510",
-            appId: "1:383528508510:web:76a8cc4a8cb55c9c9928cf",
-            measurementId: "G-8G5PJEMVY7"
-        };
-
-        // Inicializar Firebase
-        firebase.initializeApp(firebaseConfig);
-
-        // Escuchar cambios en temperatura
-        firebase.database().ref('temperatura').on('value', (snapshot) => {
-            const temp = snapshot.val();
-            if (temp !== null) {
-                document.getElementById('temperaturaActual').innerText = temp + " °C";
-            }
-        });
-
-        // Escuchar cambios en humedad
-        firebase.database().ref('humedad').on('value', (snapshot) => {
-            const hum = snapshot.val();
-            if (hum !== null) {
-                document.getElementById('humedadActual').innerText = hum + " %";
-            }
-        });
-    </script>
 </body>
 </html>
