@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlashTemp</title>
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 15px;
+            background-color: #104554;
+            background-image: url(https://cdn.pixabay.com/photo/2013/10/16/10/17/clouds-196230_1280.jpg);
+            background-size: cover;
+            background-position: center;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            padding-top: 50px;
+        }
+        h1 {
+            color: #ffffff;
+            margin-bottom: 40px;
+            font-size: 70px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        p {
+            color: #ffffff;
+            margin-bottom: 15px;
+            font-size: 40px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        .datos-clima {
+            display: flex;
+            justify-content: center;
+            gap: 60px;
+            flex-wrap: wrap;
+            align-items: flex-start;
+        }
+        .dato {
+            text-align: center;
+            min-width: 350px;
+            min-height: 280px;
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.3);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .dato:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+            border-color: rgba(255,255,255,0.6);
+        }
+        .dato p {
+            font-weight: bold;
+            margin-bottom: 30px;
+            font-size: 26px;
+        }
+        .valor-dato {
+            font-size: 32px;
+            font-weight: bold;
+            color: #bcddff;
+            margin: 10px 0;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+        }
+        img {
+            display: block;
+            max-width: 200px;
+            width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease;
+        }
+        img:hover {
+            transform: scale(1.05);
+        }
+        .header-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 60%;
+            background: transparent;
+            box-shadow: none;
+            border: none;
+            margin-top: 15px;
+        }
+        .dato-link {
+            text-decoration: none;
+            color:inherit;
+            display: block;
+        }
+        .dato-link:hover .dato {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+            border-color: rgba(255,255,255,0.6);
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <section>
+        <div class="header-container">
+            <img src="https://i.ibb.co/xqRWPDg2/logo-flashtemp.png" alt="Logo FlashTemp" class="logo">
+            <h1>FlashTemp</h1>
+        </div>
+    </section>
+    <section class="datos-clima">
+        <a href="temperatura.html" target="_blank" class="dato-link">
+            <div class="dato">
+                <p>La temperatura actual es:</p>
+                <div class="valor-dato" id="temperaturaActual">-- °C</div>
+                <img src="https://static.vecteezy.com/system/resources/previews/037/444/770/original/temperature-long-circle-icon-vector.jpg" alt="Icono de temperatura"> 
+            </div>
+        </a>
+        <a href="humedad.html" target="_blank" class="dato-link">       
+            <div class="dato">
+                <p>La humedad actual es:</p>
+                <div class="valor-dato" id="humedadActual">-- %</div>
+                <img src="https://tse1.explicit.bing.net/th/id/OIP.D9WR_7CHz2HK6Tbz9t2ADwHaHa?cb=ucfimg2ucfimg=1&rs=1&pid=ImgDetMain&o=7&rm=3" alt="Icono de Humedad">
+            </div>
+        </a>
+    </section>
+
+    <!-- Firebase Configuration -->
+    <script>
+        // Configuración de Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBm2mXJJpJZulKtTfLhoPX2-f2KhzdnSQw",
+            authDomain: "flashtemp-87a59.firebaseapp.com",
+            databaseURL: "https://flashtemp-87a59-default-rtdb.firebaseio.com",
+            projectId: "flashtemp-87a59",
+            storageBucket: "flashtemp-87a59.firebasestorage.app",
+            messagingSenderId: "383528508510",
+            appId: "1:383528508510:web:76a8cc4a8cb55c9c9928cf",
+            measurementId: "G-8G5PJEMVY7"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        // Escuchar cambios en temperatura
+        firebase.database().ref('temperatura').on('value', (snapshot) => {
+            const temp = snapshot.val();
+            if (temp !== null) {
+                document.getElementById('temperaturaActual').innerText = temp + " °C";
+            }
+        });
+
+        // Escuchar cambios en humedad
+        firebase.database().ref('humedad').on('value', (snapshot) => {
+            const hum = snapshot.val();
+            if (hum !== null) {
+                document.getElementById('humedadActual').innerText = hum + " %";
+            }
+        });
+    </script>
+</body>
+</html>
