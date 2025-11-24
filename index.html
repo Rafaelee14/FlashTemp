@@ -122,7 +122,7 @@
         // Inicializar Firebase
         firebase.initializeApp(firebaseConfig);
         
-        console.log("🔥 Firebase configurado correctamente");
+        console.log("Firebase configurado correctamente");
         
         // Escuchar temperatura
         firebase.database().ref('temperatura').on('value', (snapshot) => {
@@ -153,18 +153,16 @@
     <section class="datos-clima">
         <a href="temperatura.html" target="_blank" class="dato-link">
             <div class="dato">
-                <div class="dato-titulo">🌡️ Temperatura Actual</div>
+                <div class="dato-titulo">Temperatura Actual</div>
                 <div class="valor-dato" id="temperaturaActual">--°C</div>
             </div>
         </a>
         <a href="humedad.html" target="_blank" class="dato-link">       
             <div class="dato">
-                <div class="dato-titulo">💧 Humedad Actual</div>
+                <div class="dato-titulo">Humedad Actual</div>
                 <div class="valor-dato" id="humedadActual">--%</div>
             </div>
         </a>
     </section>
 </body>
 </html>
-
-
