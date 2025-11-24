@@ -127,7 +127,7 @@
         // Escuchar temperatura
         firebase.database().ref('temperatura').on('value', (snapshot) => {
             const temp = snapshot.val();
-            console.log("🌡️ Temperatura:", temp);
+            console.log("Temperatura:", temp);
             if (temp !== null) {
                 document.getElementById('temperaturaActual').innerText = temp + "°C";
             }
@@ -136,7 +136,7 @@
         // Escuchar humedad
         firebase.database().ref('humedad').on('value', (snapshot) => {
             const hum = snapshot.val();
-            console.log("💧 Humedad:", hum);
+            console.log("Humedad:", hum);
             if (hum !== null) {
                 document.getElementById('humedadActual').innerText = hum + "%";
             }
@@ -166,4 +166,5 @@
     </section>
 </body>
 </html>
+
 
