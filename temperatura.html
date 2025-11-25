@@ -148,7 +148,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     
-        <script>
+    <script>
         const firebaseConfig = {
             apiKey: "AIzaSyBm2mXJJpJZulKtTfLhoPX2-f2KhzdnSQw",
             authDomain: "flashtemp-87a59.firebaseapp.com",
@@ -176,19 +176,23 @@
                     Object.keys(historico).forEach(fecha => {
                         Object.keys(historico[fecha]).forEach(hora => {
                             const dato = historico[fecha][hora];
-                            todosLosDatos.push({
-                                fecha: fecha,
-                                hora: hora,
-                                temperatura: dato.temperatura,
-                                timestamp: new Date(fecha + 'T' + hora + ':00')
-                            });
+                            // CORRECCIÓN: Verificar que el dato tenga temperatura
+                            if (dato && typeof dato.temperatura === 'number') {
+                                todosLosDatos.push({
+                                    fecha: fecha,
+                                    hora: hora,
+                                    temperatura: dato.temperatura,
+                                    timestamp: new Date(fecha + 'T' + hora + ':00')
+                                });
+                            }
                         });
                     });
                     
                     todosLosDatos.sort((a, b) => b.timestamp - a.timestamp);
                     console.log("✅ Datos procesados:", todosLosDatos.length);
+                    console.log("📅 Ejemplo de datos:", todosLosDatos.slice(0, 3));
                     
-                    // OCULTAR MENSAJE DE CARGA INMEDIATAMENTE
+                    // OCULTAR MENSAJE DE CARGA
                     const loadingElement = document.getElementById('loadingChart');
                     if (loadingElement) loadingElement.style.display = 'none';
                     
@@ -207,31 +211,54 @@
         function cargarDatosGrafica() {
             if (todosLosDatos.length === 0) {
                 console.log("❌ No hay datos para gráficas");
+                mostrarDatosDeEjemploTemporal();
                 return;
             }
 
             const dias = parseInt(document.getElementById('selectRango').value);
             const fechaLimite = new Date();
             fechaLimite.setDate(fechaLimite.getDate() - dias);
+            fechaLimite.setHours(0, 0, 0, 0); // Resetear a inicio del día
             
-            const datosFiltrados = todosLosDatos.filter(d => new Date(d.fecha) >= fechaLimite);
+            console.log("Fecha límite para filtrar:", fechaLimite);
+            console.log("Total de datos disponibles:", todosLosDatos.length);
+
+            // CORRECCIÓN PRINCIPAL: Usar el timestamp ya convertido
+            const datosFiltrados = todosLosDatos.filter(d => d.timestamp >= fechaLimite);
             
-            console.log("Datos filtrados para gráfica:", datosFiltrados.length);
+            console.log("📈 Datos filtrados para gráfica:", datosFiltrados.length);
 
             if (datosFiltrados.length === 0) {
-                console.log("❌ No hay datos filtrados");
+                console.log("⚠️ No hay datos filtrados - mostrando todos los datos disponibles");
+                // Si no hay datos en el rango, mostrar todos los disponibles
+                crearGraficasConDatos(todosLosDatos);
                 return;
             }
 
+            crearGraficasConDatos(datosFiltrados);
+        }
+
+        // NUEVA FUNCIÓN AUXILIAR MEJORADA
+        function crearGraficasConDatos(datos) {
+            console.log("🎨 Creando gráficas con", datos.length, "datos");
+            
+            if (datos.length === 0) {
+                console.log("❌ No hay datos para crear gráficas");
+                mostrarDatosDeEjemploTemporal();
+                return;
+            }
+
+            const dias = parseInt(document.getElementById('selectRango').value);
             let labels = [];
             let promedios = [];
 
             if (dias === 1) {
+                // Agrupar por hora para últimas 24h
                 const datosPorHora = {};
-                datosFiltrados.forEach(dato => {
-                    const clave = dato.hora;
-                    if (!datosPorHora[clave]) datosPorHora[clave] = [];
-                    datosPorHora[clave].push(dato.temperatura);
+                datos.forEach(dato => {
+                    const hora = dato.hora.substring(0, 5); // Tomar solo HH:MM
+                    if (!datosPorHora[hora]) datosPorHora[hora] = [];
+                    datosPorHora[hora].push(dato.temperatura);
                 });
 
                 labels = Object.keys(datosPorHora).sort();
@@ -241,8 +268,9 @@
                 });
 
             } else {
+                // Agrupar por fecha para múltiples días
                 const datosPorDia = {};
-                datosFiltrados.forEach(dato => {
+                datos.forEach(dato => {
                     if (!datosPorDia[dato.fecha]) datosPorDia[dato.fecha] = [];
                     datosPorDia[dato.fecha].push(dato.temperatura);
                 });
@@ -253,15 +281,18 @@
                     return temps.reduce((a, b) => a + b, 0) / temps.length;
                 });
 
+                // Formatear fechas para mostrar
                 labels = labels.map(fecha => {
                     const [año, mes, dia] = fecha.split('-');
                     return `${dia}/${mes}`;
                 });
             }
 
-            console.log("🎨 Creando gráficas con:", labels, promedios);
+            console.log("🏷️ Labels:", labels);
+            console.log("📊 Promedios:", promedios);
+            
             crearGraficaPrincipal(labels, promedios);
-            crearHistograma(datosFiltrados.map(d => d.temperatura));
+            crearHistograma(datos.map(d => d.temperatura));
         }
 
         function crearGraficaPrincipal(labels, datos) {
@@ -271,13 +302,9 @@
                 return;
             }
             
-            // FORZAR DIMENSIONES
-            canvas.style.width = "100%";
-            canvas.style.height = "300px";
-            
             const ctx = canvas.getContext('2d');
             
-            // DESTRUIR GRÁFICA ANTERIOR
+            // Destruir gráfica anterior
             if (tempChart) {
                 tempChart.destroy();
             }
@@ -325,8 +352,8 @@
                         y: { 
                             ticks: { color: 'white', font: { size: 12 } },
                             grid: { color: 'rgba(255,255,255,0.2)' },
-                            min: 15,
-                            max: 40
+                            min: Math.min(...datos) - 2,
+                            max: Math.max(...datos) + 2
                         }
                     }
                 }
@@ -339,16 +366,17 @@
             const canvas = document.getElementById('histogramChart');
             if (!canvas) return;
             
-            canvas.style.width = "100%";
-            canvas.style.height = "300px";
-            
             const ctx = canvas.getContext('2d');
             
             if (histogramChart) histogramChart.destroy();
 
-            const bins = [];
+            // Ajustar bins dinámicamente según los datos
+            const minTemp = Math.min(...temperaturas);
+            const maxTemp = Math.max(...temperaturas);
             const binSize = 2;
-            for (let i = 15; i <= 40; i += binSize) {
+            
+            const bins = [];
+            for (let i = Math.floor(minTemp); i <= Math.ceil(maxTemp); i += binSize) {
                 const count = temperaturas.filter(temp => temp >= i && temp < i + binSize).length;
                 bins.push({ range: `${i}-${i+binSize}°C`, count: count });
             }
@@ -384,7 +412,8 @@
                         },
                         y: { 
                             ticks: { color: 'white', font: { size: 12 } },
-                            grid: { color: 'rgba(255,255,255,0.2)' }
+                            grid: { color: 'rgba(255,255,255,0.2)' },
+                            beginAtZero: true
                         }
                     }
                 }
@@ -393,7 +422,6 @@
             console.log("✅ Histograma creado");
         }
 
-        // FUNCIÓN DE EMERGENCIA - Mostrar datos de ejemplo
         function mostrarDatosDeEjemploTemporal() {
             console.log("🔄 Mostrando datos de ejemplo temporal...");
             const loadingElement = document.getElementById('loadingChart');
@@ -431,7 +459,29 @@
 
         function filtrarTablaPorFecha() {
             const fecha = document.getElementById('filtroFecha').value;
-            if (!fecha) actualizarTabla();
+            if (!fecha) {
+                actualizarTabla();
+                return;
+            }
+            
+            const datosFiltrados = todosLosDatos.filter(d => d.fecha === fecha);
+            const cuerpoTabla = document.getElementById('cuerpoTabla');
+            
+            if (datosFiltrados.length === 0) {
+                cuerpoTabla.innerHTML = '<tr><td colspan="4" style="text-align: center;">No hay datos para esta fecha</td></tr>';
+                return;
+            }
+            
+            cuerpoTabla.innerHTML = datosFiltrados.map(dato => {
+                const estado = dato.temperatura >= 28 ? 'Caluroso' : dato.temperatura <= 20 ? 'Frío' : 'Normal';
+                const claseEstado = dato.temperatura >= 28 ? 'estado-calido' : dato.temperatura <= 20 ? 'estado-frio' : 'estado-normal';
+                return `<tr>
+                    <td>${dato.fecha}</td>
+                    <td>${dato.hora}</td>
+                    <td>${dato.temperatura.toFixed(1)}°C</td>
+                    <td class="${claseEstado}">${estado}</td>
+                </tr>`;
+            }).join('');
         }
 
         function mostrarTodasLasFechas() {
@@ -446,14 +496,17 @@
             }
         });
 
+        // INICIALIZAR
         document.addEventListener('DOMContentLoaded', function() {
             console.log("🚀 Iniciando aplicación...");
             cargarTodosLosDatos();
         });
+
+        // BACKUP POR SI FALLA LA CARGA
         setTimeout(function() {
             const loadingElement = document.getElementById('loadingChart');
             if (loadingElement && loadingElement.style.display !== 'none') {
-                console.log("⏰ Forzando visualización...");
+                console.log("Forzando visualización...");
                 mostrarDatosDeEjemploTemporal();
             }
         }, 5000);
