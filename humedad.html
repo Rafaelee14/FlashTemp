@@ -44,6 +44,10 @@
             height: 300px;
             position: relative;
         }
+        .chart-wrapper canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
         .filtros {
             display: flex;
             gap: 10px;
@@ -115,17 +119,17 @@
         </div>
 
         <div class="chart-container">
-            <h3>📈 Distribución de Humedades</h3>
+            <h3>Distribución de Humedades</h3>
             <div class="chart-wrapper">
                 <canvas id="distribucionChart"></canvas>
             </div>
         </div>
 
         <div class="chart-container">
-            <h3>📋 Tabla Histórica</h3>
+            <h3>Tabla Histórica</h3>
             <div class="filtros">
                 <input type="date" id="filtroFecha" onchange="filtrarTablaPorFecha()">
-                <button onclick="mostrarTodasLasFechas()">📅 Todas las Fechas</button>
+                <button onclick="mostrarTodasLasFechas()">Todas las Fechas</button>
             </div>
             <div class="tabla-container">
                 <table class="tabla-historico">
@@ -161,7 +165,6 @@
         let todosLosDatos = [];
 
         async function cargarTodosLosDatos() {
-            console.log("📥 Cargando datos de humedad desde Firebase...");
             try {
                 const snapshot = await firebase.database().ref('historico').once('value');
                 const historico = snapshot.val();
@@ -180,24 +183,15 @@
                         });
                     });
                     
-                    // Ordenar por fecha (más reciente primero)
                     todosLosDatos.sort((a, b) => b.timestamp - a.timestamp);
-                    console.log(`✅ ${todosLosDatos.length} datos de humedad cargados`);
-                    
-                    // Inicializar todo
                     cargarDatosGrafica();
                     actualizarTabla();
-                } else {
-                    console.log("ℹNo hay datos históricos de humedad aún");
-                    document.getElementById('loadingChart').textContent = 'No hay datos históricos. El ESP32 guarda datos cada hora.';
                 }
             } catch (error) {
-                console.error('Error cargando datos de humedad:', error);
-                document.getElementById('loadingChart').textContent = 'Error cargando datos';
+                console.error('Error cargando datos:', error);
             }
         }
 
-        // Gráfica principal 
         function cargarDatosGrafica() {
             const dias = parseInt(document.getElementById('selectRango').value);
             const fechaLimite = new Date();
@@ -205,12 +199,10 @@
             
             const datosFiltrados = todosLosDatos.filter(d => new Date(d.fecha) >= fechaLimite);
             
-            if (datosFiltrados.length === 0) {
-                document.getElementById('loadingChart').textContent = 'No hay datos para el período seleccionado';
-                return;
-            }
+            if (datosFiltrados.length === 0) return;
 
             document.getElementById('loadingChart').style.display = 'none';
+
             let labels = [];
             let promedios = [];
 
@@ -252,7 +244,11 @@
         }
 
         function crearGraficaPrincipal(labels, datos) {
-            const ctx = document.getElementById('humChart').getContext('2d');
+            const ctx = document.getElementById('humChart');
+            if (!ctx) return;
+            
+            ctx.width = ctx.offsetWidth;
+            ctx.height = ctx.offsetHeight;
             
             if (humChart) humChart.destroy();
             
@@ -264,8 +260,8 @@
                         label: 'Humedad Promedio (%)',
                         data: datos,
                         borderColor: '#4fc3f7',
-                        backgroundColor: 'rgba(79, 195, 247, 0.1)',
-                        borderWidth: 2,
+                        backgroundColor: 'rgba(79, 195, 247, 0.2)',
+                        borderWidth: 3,
                         fill: true,
                         tension: 0.3
                     }]
@@ -274,21 +270,18 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { labels: { color: 'white' } },
-                        tooltip: { backgroundColor: 'rgba(0,0,0,0.8)' }
+                        legend: { display: true, labels: { color: 'white', font: { size: 14 } } }
                     },
                     scales: {
-                        x: { ticks: { color: 'white' }, grid: { color: 'rgba(255,255,255,0.1)' } },
+                        x: { 
+                            ticks: { color: 'white', maxRotation: 45 },
+                            grid: { color: 'rgba(255,255,255,0.1)' }
+                        },
                         y: { 
-                            ticks: { color: 'white' }, 
+                            ticks: { color: 'white' },
                             grid: { color: 'rgba(255,255,255,0.1)' },
                             min: 0,
-                            max: 100,
-                            title: {
-                                display: true,
-                                text: 'Humedad (%)',
-                                color: 'white'
-                            }
+                            max: 100
                         }
                     }
                 }
@@ -296,12 +289,16 @@
         }
 
         function crearGraficaDistribucion(humedades) {
-            const ctx = document.getElementById('distribucionChart').getContext('2d');
+            const ctx = document.getElementById('distribucionChart');
+            if (!ctx) return;
+            
+            ctx.width = ctx.offsetWidth;
+            ctx.height = ctx.offsetHeight;
             
             if (distribucionChart) distribucionChart.destroy();
 
             const bins = [];
-            const binSize = 10; 
+            const binSize = 10;
             for (let i = 0; i <= 90; i += binSize) {
                 const count = humedades.filter(hum => hum >= i && hum < i + binSize).length;
                 bins.push({ range: `${i}-${i+binSize}%`, count: count });
@@ -314,7 +311,7 @@
                     datasets: [{
                         label: 'Frecuencia',
                         data: bins.map(b => b.count),
-                        backgroundColor: 'rgba(79, 195, 247, 0.6)',
+                        backgroundColor: 'rgba(79, 195, 247, 0.7)',
                         borderColor: '#4fc3f7',
                         borderWidth: 1
                     }]
@@ -323,7 +320,7 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { labels: { color: 'white' } }
+                        legend: { display: true, labels: { color: 'white' } }
                     },
                     scales: {
                         x: { ticks: { color: 'white' }, grid: { color: 'rgba(255,255,255,0.1)' } },
@@ -335,7 +332,14 @@
 
         function actualizarTabla() {
             const cuerpoTabla = document.getElementById('cuerpoTabla');
-            const datosMostrar = todosLosDatos.slice(0, 20); 
+            if (!cuerpoTabla) return;
+            
+            if (todosLosDatos.length === 0) {
+                cuerpoTabla.innerHTML = '<tr><td colspan="4" style="text-align: center;">No hay datos</td></tr>';
+                return;
+            }
+            
+            const datosMostrar = todosLosDatos.slice(0, 20);
             
             cuerpoTabla.innerHTML = datosMostrar.map(dato => {
                 const estado = dato.humedad >= 70 ? 'Húmedo' : dato.humedad <= 40 ? 'Seco' : 'Normal';
@@ -365,6 +369,7 @@
                 document.getElementById('humActual').innerText = hum.toFixed(1) + " %";
             }
         });
+
         document.addEventListener('DOMContentLoaded', function() {
             cargarTodosLosDatos();
         });
