@@ -223,7 +223,7 @@
                     cargarDatosGrafica();
                     actualizarTabla();
                 } else {
-                    console.log("❌ No hay datos históricos");
+                    console.log("No hay datos históricos");
                     mostrarDatosDeEjemploTemporal();
                 }
             } catch (error) {
@@ -401,11 +401,11 @@
                 pieChartRangos.destroy();
             }
             const rangos = [
-                { min: 15, max: 20, label: '15-20°C', color: '#64b5f6' },
-                { min: 20, max: 25, label: '20-25°C', color: '#4fc3f7' },
-                { min: 25, max: 28, label: '25-28°C', color: '#ffeb3b' },
-                { min: 28, max: 32, label: '28-32°C', color: '#ffb74d' },
-                { min: 32, max: 40, label: '32-40°C', color: '#ff6b6b' }
+               { min: 15, max: 20, label: '15-20°C', color: '#36A2EB' },    
+               { min: 20, max: 25, label: '20-25°C', color: '#4BC0C0' },    
+               { min: 25, max: 28, label: '25-28°C', color: '#FFCE56' },    
+               { min: 28, max: 32, label: '28-32°C', color: '#FF9F40' },    
+               { min: 32, max: 40, label: '32-40°C', color: '#FF6384' }     
             ];
             const conteoRangos = rangos.map(rango => {
                 const count = temperaturas.filter(temp => temp >= rango.min && temp < rango.max).length;
@@ -471,14 +471,12 @@
                 pieChartEstados.destroy();
             }
 
-            // Definir estados
             const estados = [
-                { tipo: 'Frío', max: 20, color: '#64b5f6' },
-                { tipo: 'Normal', min: 20, max: 28, color: '#4fc3f7' },
-                { tipo: 'Caluroso', min: 28, color: '#ff6b6b' }
+              { tipo: 'Frío', max: 20, color: '#36A2EB' },     
+              { tipo: 'Normal', min: 20, max: 28, color: '#4BC0C0' }, 
+              { tipo: 'Caluroso', min: 28, color: '#FF6384' } 
             ];
 
-            // Contar por estado
             const conteoEstados = estados.map(estado => {
                 let count;
                 if (estado.tipo === 'Frío') {
@@ -617,7 +615,7 @@
 
         // INICIALIZAR
         document.addEventListener('DOMContentLoaded', function() {
-            console.log("🚀 Iniciando aplicación...");
+            console.log("Iniciando aplicación...");
             cargarTodosLosDatos();
         });
 
@@ -625,7 +623,7 @@
         setTimeout(function() {
             const loadingElement = document.getElementById('loadingChart');
             if (loadingElement && loadingElement.style.display !== 'none') {
-                console.log("⏰ Forzando visualización...");
+                console.log("Forzando visualización...");
                 mostrarDatosDeEjemploTemporal();
             }
         }, 5000);
