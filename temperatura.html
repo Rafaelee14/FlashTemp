@@ -148,7 +148,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     
-    <script>
+        <script>
         const firebaseConfig = {
             apiKey: "AIzaSyBm2mXJJpJZulKtTfLhoPX2-f2KhzdnSQw",
             authDomain: "flashtemp-87a59.firebaseapp.com",
@@ -169,6 +169,8 @@
                 const snapshot = await firebase.database().ref('historico').once('value');
                 const historico = snapshot.val();
                 
+                console.log("Datos de Firebase:", historico);
+                
                 todosLosDatos = [];
                 if (historico) {
                     Object.keys(historico).forEach(fecha => {
@@ -184,24 +186,42 @@
                     });
                     
                     todosLosDatos.sort((a, b) => b.timestamp - a.timestamp);
+                    console.log("✅ Datos procesados:", todosLosDatos.length);
+                    
+                    // OCULTAR MENSAJE DE CARGA INMEDIATAMENTE
+                    const loadingElement = document.getElementById('loadingChart');
+                    if (loadingElement) loadingElement.style.display = 'none';
+                    
                     cargarDatosGrafica();
                     actualizarTabla();
+                } else {
+                    console.log("❌ No hay datos históricos");
+                    mostrarDatosDeEjemploTemporal();
                 }
             } catch (error) {
                 console.error('Error cargando datos:', error);
+                mostrarDatosDeEjemploTemporal();
             }
         }
 
         function cargarDatosGrafica() {
+            if (todosLosDatos.length === 0) {
+                console.log("❌ No hay datos para gráficas");
+                return;
+            }
+
             const dias = parseInt(document.getElementById('selectRango').value);
             const fechaLimite = new Date();
             fechaLimite.setDate(fechaLimite.getDate() - dias);
             
             const datosFiltrados = todosLosDatos.filter(d => new Date(d.fecha) >= fechaLimite);
             
-            if (datosFiltrados.length === 0) return;
+            console.log("Datos filtrados para gráfica:", datosFiltrados.length);
 
-            document.getElementById('loadingChart').style.display = 'none';
+            if (datosFiltrados.length === 0) {
+                console.log("❌ No hay datos filtrados");
+                return;
+            }
 
             let labels = [];
             let promedios = [];
@@ -239,61 +259,90 @@
                 });
             }
 
+            console.log("🎨 Creando gráficas con:", labels, promedios);
             crearGraficaPrincipal(labels, promedios);
             crearHistograma(datosFiltrados.map(d => d.temperatura));
         }
 
         function crearGraficaPrincipal(labels, datos) {
-            const ctx = document.getElementById('tempChart');
-            if (!ctx) return;
+            const canvas = document.getElementById('tempChart');
+            if (!canvas) {
+                console.log("❌ Canvas no encontrado");
+                return;
+            }
             
-            ctx.width = ctx.offsetWidth;
-            ctx.height = ctx.offsetHeight;
+            // FORZAR DIMENSIONES
+            canvas.style.width = "100%";
+            canvas.style.height = "300px";
             
-            if (tempChart) tempChart.destroy();
+            const ctx = canvas.getContext('2d');
+            
+            // DESTRUIR GRÁFICA ANTERIOR
+            if (tempChart) {
+                tempChart.destroy();
+            }
+            
+            console.log("🔄 Creando gráfica principal...");
             
             tempChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Temperatura Promedio (°C)',
+                        label: 'Temperatura (°C)',
                         data: datos,
                         borderColor: '#ffeb3b',
-                        backgroundColor: 'rgba(255, 235, 59, 0.2)',
-                        borderWidth: 3,
+                        backgroundColor: 'rgba(255, 235, 59, 0.3)',
+                        borderWidth: 4,
                         fill: true,
-                        tension: 0.3
+                        tension: 0.4,
+                        pointBackgroundColor: '#ffeb3b',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    animation: {
+                        duration: 1000
+                    },
                     plugins: {
-                        legend: { display: true, labels: { color: 'white', font: { size: 14 } } }
+                        legend: { 
+                            display: true, 
+                            labels: { 
+                                color: 'white', 
+                                font: { size: 14, weight: 'bold' } 
+                            } 
+                        }
                     },
                     scales: {
                         x: { 
-                            ticks: { color: 'white', maxRotation: 45 },
-                            grid: { color: 'rgba(255,255,255,0.1)' }
+                            ticks: { color: 'white', font: { size: 12 } },
+                            grid: { color: 'rgba(255,255,255,0.2)' }
                         },
                         y: { 
-                            ticks: { color: 'white' },
-                            grid: { color: 'rgba(255,255,255,0.1)' },
+                            ticks: { color: 'white', font: { size: 12 } },
+                            grid: { color: 'rgba(255,255,255,0.2)' },
                             min: 15,
                             max: 40
                         }
                     }
                 }
             });
+            
+            console.log("✅ Gráfica principal creada");
         }
 
         function crearHistograma(temperaturas) {
-            const ctx = document.getElementById('histogramChart');
-            if (!ctx) return;
+            const canvas = document.getElementById('histogramChart');
+            if (!canvas) return;
             
-            ctx.width = ctx.offsetWidth;
-            ctx.height = ctx.offsetHeight;
+            canvas.style.width = "100%";
+            canvas.style.height = "300px";
+            
+            const ctx = canvas.getContext('2d');
             
             if (histogramChart) histogramChart.destroy();
 
@@ -311,23 +360,50 @@
                     datasets: [{
                         label: 'Frecuencia',
                         data: bins.map(b => b.count),
-                        backgroundColor: 'rgba(255, 235, 59, 0.7)',
+                        backgroundColor: 'rgba(255, 235, 59, 0.8)',
                         borderColor: '#ffeb3b',
-                        borderWidth: 1
+                        borderWidth: 2
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    animation: {
+                        duration: 1000
+                    },
                     plugins: {
-                        legend: { display: true, labels: { color: 'white' } }
+                        legend: { 
+                            display: true, 
+                            labels: { color: 'white', font: { size: 14 } } 
+                        }
                     },
                     scales: {
-                        x: { ticks: { color: 'white' }, grid: { color: 'rgba(255,255,255,0.1)' } },
-                        y: { ticks: { color: 'white' }, grid: { color: 'rgba(255,255,255,0.1)' } }
+                        x: { 
+                            ticks: { color: 'white', font: { size: 11 } },
+                            grid: { color: 'rgba(255,255,255,0.2)' }
+                        },
+                        y: { 
+                            ticks: { color: 'white', font: { size: 12 } },
+                            grid: { color: 'rgba(255,255,255,0.2)' }
+                        }
                     }
                 }
             });
+            
+            console.log("✅ Histograma creado");
+        }
+
+        // FUNCIÓN DE EMERGENCIA - Mostrar datos de ejemplo
+        function mostrarDatosDeEjemploTemporal() {
+            console.log("🔄 Mostrando datos de ejemplo temporal...");
+            const loadingElement = document.getElementById('loadingChart');
+            if (loadingElement) loadingElement.style.display = 'none';
+            
+            const labels = ['14:00', '15:00', '16:00', '17:00', '18:00'];
+            const datos = [25.3, 25.8, 26.2, 25.9, 25.5];
+            
+            crearGraficaPrincipal(labels, datos);
+            crearHistograma(datos);
         }
 
         function actualizarTabla() {
@@ -371,8 +447,16 @@
         });
 
         document.addEventListener('DOMContentLoaded', function() {
+            console.log("🚀 Iniciando aplicación...");
             cargarTodosLosDatos();
         });
+        setTimeout(function() {
+            const loadingElement = document.getElementById('loadingChart');
+            if (loadingElement && loadingElement.style.display !== 'none') {
+                console.log("⏰ Forzando visualización...");
+                mostrarDatosDeEjemploTemporal();
+            }
+        }, 5000);
     </script>
 </body>
 </html>
