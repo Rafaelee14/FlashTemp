@@ -242,18 +242,17 @@
             const dias = parseInt(document.getElementById('selectRango').value);
             const fechaLimite = new Date();
             fechaLimite.setDate(fechaLimite.getDate() - dias);
-            fechaLimite.setHours(0, 0, 0, 0); // Resetear a inicio del día
+            fechaLimite.setHours(0, 0, 0, 0); 
             
             console.log("Fecha límite para filtrar:", fechaLimite);
             console.log("Total de datos disponibles:", todosLosDatos.length);
 
-            // CORRECCIÓN PRINCIPAL: Usar el timestamp ya convertido
             const datosFiltrados = todosLosDatos.filter(d => d.timestamp >= fechaLimite);
             
             console.log("Datos filtrados para gráfica:", datosFiltrados.length);
 
             if (datosFiltrados.length === 0) {
-                console.log("⚠️ No hay datos filtrados - mostrando todos los datos disponibles");
+                console.log("No hay datos filtrados - mostrando todos los datos disponibles");
     
                 crearGraficasConDatos(todosLosDatos);
                 return;
@@ -266,7 +265,7 @@
             console.log("Creando gráficas con", datos.length, "datos");
             
             if (datos.length === 0) {
-                console.log("❌ No hay datos para crear gráficas");
+                console.log("No hay datos para crear gráficas");
                 mostrarDatosDeEjemploTemporal();
                 return;
             }
@@ -404,11 +403,11 @@
             }
 
             const rangos = [
-                { min: 0, max: 20, label: '0-20%', color: '#ffb74d' },     
-                { min: 20, max: 40, label: '20-40%', color: '#ffd54f' },   
-                { min: 40, max: 60, label: '40-60%', color: '#81c784' },    
-                { min: 60, max: 80, label: '60-80%', color: '#4fc3f7' },    
-                { min: 80, max: 100, label: '80-100%', color: '#2196f3' }   
+                { min: 0, max: 20, label: '0-20%', color: '#FF6384' },  
+                { min: 20, max: 40, label: '20-40%', color: '#FF9F40' },  
+                { min: 40, max: 60, label: '40-60%', color: '#FFCE56' },  
+                { min: 60, max: 80, label: '60-80%', color: '#4BC0C0' },  
+                { min: 80, max: 100, label: '80-100%', color: '#36A2EB' } 
             ];
 
             const conteoRangos = rangos.map(rango => {
@@ -476,9 +475,9 @@
             }
 
             const estados = [
-                { tipo: 'Seco', max: 30, color: '#ffb74d' },      
-                { tipo: 'Normal', min: 30, max: 70, color: '#81c784' }, 
-                { tipo: 'Húmedo', min: 70, color: '#2196f3' }       
+               { tipo: 'Seco', max: 30, color: '#FF6384' },    // Rosa rojizo
+               { tipo: 'Normal', min: 30, max: 70, color: '#FFCE56' }, // Amarillo
+               { tipo: 'Húmedo', min: 70, color: '#36A2EB' }   // Azul
             ];
 
             const conteoEstados = estados.map(estado => {
