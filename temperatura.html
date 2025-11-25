@@ -44,6 +44,10 @@
             height: 300px;
             position: relative;
         }
+        .chart-wrapper canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
         .filtros {
             display: flex;
             gap: 10px;
@@ -85,6 +89,9 @@
             padding: 10px 12px;
             border-bottom: 1px solid rgba(255,255,255,0.1);
         }
+        .estado-calido { color: #ff6b6b; font-weight: bold; }
+        .estado-normal { color: #4fc3f7; }
+        .estado-frio { color: #64b5f6; font-weight: bold; }
         .loading { color: #bcddff; margin: 10px 0; }
         a { color: #bcddff; text-decoration: none; padding: 8px 16px; border: 2px solid #bcddff; border-radius: 6px; margin: 5px; display: inline-block; }
     </style>
@@ -104,7 +111,7 @@
         </div>
 
         <div class="chart-container">
-            <h3>📊 Gráfica de Temperatura</h3>
+            <h3>Gráfica de Temperatura</h3>
             <div class="loading" id="loadingChart">Cargando gráfica...</div>
             <div class="chart-wrapper">
                 <canvas id="tempChart"></canvas>
@@ -112,17 +119,17 @@
         </div>
 
         <div class="chart-container">
-            <h3>📈 Histograma de Temperaturas</h3>
+            <h3>Histograma de Temperaturas</h3>
             <div class="chart-wrapper">
                 <canvas id="histogramChart"></canvas>
             </div>
         </div>
 
         <div class="chart-container">
-            <h3>📋 Tabla Histórica</h3>
+            <h3>Tabla Histórica</h3>
             <div class="filtros">
                 <input type="date" id="filtroFecha" onchange="filtrarTablaPorFecha()">
-                <button onclick="mostrarTodasLasFechas()">📅 Todas las Fechas</button>
+                <button onclick="mostrarTodasLasFechas()">Todas las Fechas</button>
             </div>
             <div class="tabla-container">
                 <table class="tabla-historico">
@@ -158,7 +165,6 @@
         let todosLosDatos = [];
 
         async function cargarTodosLosDatos() {
-            console.log("📥 Cargando datos desde Firebase...");
             try {
                 const snapshot = await firebase.database().ref('historico').once('value');
                 const historico = snapshot.val();
@@ -178,19 +184,14 @@
                     });
                     
                     todosLosDatos.sort((a, b) => b.timestamp - a.timestamp);
-                    console.log(`✅ ${todosLosDatos.length} datos cargados`);
-                   
                     cargarDatosGrafica();
                     actualizarTabla();
-                } else {
-                    console.log("ℹNo hay datos históricos aún");
-                    document.getElementById('loadingChart').textContent = 'No hay datos históricos. El ESP32 guarda datos cada hora.';
                 }
             } catch (error) {
                 console.error('Error cargando datos:', error);
-                document.getElementById('loadingChart').textContent = 'Error cargando datos';
             }
         }
+
         function cargarDatosGrafica() {
             const dias = parseInt(document.getElementById('selectRango').value);
             const fechaLimite = new Date();
@@ -198,14 +199,10 @@
             
             const datosFiltrados = todosLosDatos.filter(d => new Date(d.fecha) >= fechaLimite);
             
-            if (datosFiltrados.length === 0) {
-                document.getElementById('loadingChart').textContent = 'No hay datos para el período seleccionado';
-                return;
-            }
+            if (datosFiltrados.length === 0) return;
 
             document.getElementById('loadingChart').style.display = 'none';
 
-            // Calcular promedios
             let labels = [];
             let promedios = [];
 
@@ -236,7 +233,6 @@
                     return temps.reduce((a, b) => a + b, 0) / temps.length;
                 });
 
-                // Formatear labels para días
                 labels = labels.map(fecha => {
                     const [año, mes, dia] = fecha.split('-');
                     return `${dia}/${mes}`;
@@ -248,7 +244,11 @@
         }
 
         function crearGraficaPrincipal(labels, datos) {
-            const ctx = document.getElementById('tempChart').getContext('2d');
+            const ctx = document.getElementById('tempChart');
+            if (!ctx) return;
+            
+            ctx.width = ctx.offsetWidth;
+            ctx.height = ctx.offsetHeight;
             
             if (tempChart) tempChart.destroy();
             
@@ -260,8 +260,8 @@
                         label: 'Temperatura Promedio (°C)',
                         data: datos,
                         borderColor: '#ffeb3b',
-                        backgroundColor: 'rgba(255, 235, 59, 0.1)',
-                        borderWidth: 2,
+                        backgroundColor: 'rgba(255, 235, 59, 0.2)',
+                        borderWidth: 3,
                         fill: true,
                         tension: 0.3
                     }]
@@ -270,13 +270,15 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { labels: { color: 'white' } },
-                        tooltip: { backgroundColor: 'rgba(0,0,0,0.8)' }
+                        legend: { display: true, labels: { color: 'white', font: { size: 14 } } }
                     },
                     scales: {
-                        x: { ticks: { color: 'white' }, grid: { color: 'rgba(255,255,255,0.1)' } },
+                        x: { 
+                            ticks: { color: 'white', maxRotation: 45 },
+                            grid: { color: 'rgba(255,255,255,0.1)' }
+                        },
                         y: { 
-                            ticks: { color: 'white' }, 
+                            ticks: { color: 'white' },
                             grid: { color: 'rgba(255,255,255,0.1)' },
                             min: 15,
                             max: 40
@@ -286,15 +288,17 @@
             });
         }
 
-        // Histograma de frecuencias
         function crearHistograma(temperaturas) {
-            const ctx = document.getElementById('histogramChart').getContext('2d');
+            const ctx = document.getElementById('histogramChart');
+            if (!ctx) return;
+            
+            ctx.width = ctx.offsetWidth;
+            ctx.height = ctx.offsetHeight;
             
             if (histogramChart) histogramChart.destroy();
 
-            //rangos de temperatura 
             const bins = [];
-            const binSize = 2; 
+            const binSize = 2;
             for (let i = 15; i <= 40; i += binSize) {
                 const count = temperaturas.filter(temp => temp >= i && temp < i + binSize).length;
                 bins.push({ range: `${i}-${i+binSize}°C`, count: count });
@@ -307,7 +311,7 @@
                     datasets: [{
                         label: 'Frecuencia',
                         data: bins.map(b => b.count),
-                        backgroundColor: 'rgba(255, 235, 59, 0.6)',
+                        backgroundColor: 'rgba(255, 235, 59, 0.7)',
                         borderColor: '#ffeb3b',
                         borderWidth: 1
                     }]
@@ -316,7 +320,7 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { labels: { color: 'white' } }
+                        legend: { display: true, labels: { color: 'white' } }
                     },
                     scales: {
                         x: { ticks: { color: 'white' }, grid: { color: 'rgba(255,255,255,0.1)' } },
@@ -326,10 +330,16 @@
             });
         }
 
-        // Tabla (optimizada)
         function actualizarTabla() {
             const cuerpoTabla = document.getElementById('cuerpoTabla');
-            const datosMostrar = todosLosDatos.slice(0, 20); 
+            if (!cuerpoTabla) return;
+            
+            if (todosLosDatos.length === 0) {
+                cuerpoTabla.innerHTML = '<tr><td colspan="4" style="text-align: center;">No hay datos</td></tr>';
+                return;
+            }
+            
+            const datosMostrar = todosLosDatos.slice(0, 20);
             
             cuerpoTabla.innerHTML = datosMostrar.map(dato => {
                 const estado = dato.temperatura >= 28 ? 'Caluroso' : dato.temperatura <= 20 ? 'Frío' : 'Normal';
@@ -353,7 +363,6 @@
             actualizarTabla();
         }
 
-        // Temperatura actual
         firebase.database().ref('temperatura').on('value', (snapshot) => {
             const temp = snapshot.val();
             if (temp !== null) {
@@ -361,12 +370,9 @@
             }
         });
 
-        // Inicializar
         document.addEventListener('DOMContentLoaded', function() {
             cargarTodosLosDatos();
         });
     </script>
 </body>
 </html>
-
-
