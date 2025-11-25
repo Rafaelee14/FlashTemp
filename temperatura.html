@@ -48,6 +48,18 @@
             width: 100% !important;
             height: 100% !important;
         }
+        .pie-charts-container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .pie-chart-wrapper {
+            flex: 1;
+            min-width: 300px;
+            height: 300px;
+            position: relative;
+        }
         .filtros {
             display: flex;
             gap: 10px;
@@ -94,6 +106,12 @@
         .estado-frio { color: #64b5f6; font-weight: bold; }
         .loading { color: #bcddff; margin: 10px 0; }
         a { color: #bcddff; text-decoration: none; padding: 8px 16px; border: 2px solid #bcddff; border-radius: 6px; margin: 5px; display: inline-block; }
+        .chart-title {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            color: #ffeb3b;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -119,9 +137,16 @@
         </div>
 
         <div class="chart-container">
-            <h3>Histograma de Temperaturas</h3>
-            <div class="chart-wrapper">
-                <canvas id="histogramChart"></canvas>
+            <h3>Análisis de Temperaturas</h3>
+            <div class="pie-charts-container">
+                <div class="pie-chart-wrapper">
+                    <div class="chart-title">Distribución por Rango</div>
+                    <canvas id="pieChartRangos"></canvas>
+                </div>
+                <div class="pie-chart-wrapper">
+                    <div class="chart-title">Distribución por Estado</div>
+                    <canvas id="pieChartEstados"></canvas>
+                </div>
             </div>
         </div>
 
@@ -141,7 +166,7 @@
             </div>
         </div>
         
-        <a href="https://flashtemp.netlify.app">← Inicio</a>
+        <a href="https://rafaelee14.github.io/FlashTemp/">← Inicio</a>
         <a href="humedad.html">Humedad →</a>
     </div>
 
@@ -161,7 +186,7 @@
 
         firebase.initializeApp(firebaseConfig);
         
-        let tempChart, histogramChart;
+        let tempChart, pieChartRangos, pieChartEstados;
         let todosLosDatos = [];
 
         async function cargarTodosLosDatos() {
@@ -176,7 +201,6 @@
                     Object.keys(historico).forEach(fecha => {
                         Object.keys(historico[fecha]).forEach(hora => {
                             const dato = historico[fecha][hora];
-                            // CORRECCIÓN: Verificar que el dato tenga temperatura
                             if (dato && typeof dato.temperatura === 'number') {
                                 todosLosDatos.push({
                                     fecha: fecha,
@@ -190,7 +214,7 @@
                     
                     todosLosDatos.sort((a, b) => b.timestamp - a.timestamp);
                     console.log("✅ Datos procesados:", todosLosDatos.length);
-                    console.log("📅 Ejemplo de datos:", todosLosDatos.slice(0, 3));
+                    console.log("Ejemplo de datos:", todosLosDatos.slice(0, 3));
                     
                     // OCULTAR MENSAJE DE CARGA
                     const loadingElement = document.getElementById('loadingChart');
@@ -210,7 +234,7 @@
 
         function cargarDatosGrafica() {
             if (todosLosDatos.length === 0) {
-                console.log("❌ No hay datos para gráficas");
+                console.log("No hay datos para gráficas");
                 mostrarDatosDeEjemploTemporal();
                 return;
             }
@@ -226,11 +250,10 @@
             // CORRECCIÓN PRINCIPAL: Usar el timestamp ya convertido
             const datosFiltrados = todosLosDatos.filter(d => d.timestamp >= fechaLimite);
             
-            console.log("📈 Datos filtrados para gráfica:", datosFiltrados.length);
+            console.log("Datos filtrados para gráfica:", datosFiltrados.length);
 
             if (datosFiltrados.length === 0) {
-                console.log("⚠️ No hay datos filtrados - mostrando todos los datos disponibles");
-                // Si no hay datos en el rango, mostrar todos los disponibles
+                console.log("No hay datos filtrados - mostrando todos los datos disponibles");
                 crearGraficasConDatos(todosLosDatos);
                 return;
             }
@@ -240,10 +263,10 @@
 
         // NUEVA FUNCIÓN AUXILIAR MEJORADA
         function crearGraficasConDatos(datos) {
-            console.log("🎨 Creando gráficas con", datos.length, "datos");
+            console.log("Creando gráficas con", datos.length, "datos");
             
             if (datos.length === 0) {
-                console.log("❌ No hay datos para crear gráficas");
+                console.log("No hay datos para crear gráficas");
                 mostrarDatosDeEjemploTemporal();
                 return;
             }
@@ -253,10 +276,9 @@
             let promedios = [];
 
             if (dias === 1) {
-                // Agrupar por hora para últimas 24h
                 const datosPorHora = {};
                 datos.forEach(dato => {
-                    const hora = dato.hora.substring(0, 5); // Tomar solo HH:MM
+                    const hora = dato.hora.substring(0, 5); 
                     if (!datosPorHora[hora]) datosPorHora[hora] = [];
                     datosPorHora[hora].push(dato.temperatura);
                 });
@@ -288,28 +310,27 @@
                 });
             }
 
-            console.log("🏷️ Labels:", labels);
-            console.log("📊 Promedios:", promedios);
+            console.log("Labels:", labels);
+            console.log("Promedios:", promedios);
             
             crearGraficaPrincipal(labels, promedios);
-            crearHistograma(datos.map(d => d.temperatura));
+            crearGraficasPastel(datos);
         }
 
         function crearGraficaPrincipal(labels, datos) {
             const canvas = document.getElementById('tempChart');
             if (!canvas) {
-                console.log("❌ Canvas no encontrado");
+                console.log("Canvas no encontrado");
                 return;
             }
             
             const ctx = canvas.getContext('2d');
             
-            // Destruir gráfica anterior
             if (tempChart) {
                 tempChart.destroy();
             }
             
-            console.log("🔄 Creando gráfica principal...");
+            console.log("Creando gráfica principal...");
             
             tempChart = new Chart(ctx, {
                 type: 'line',
@@ -359,67 +380,165 @@
                 }
             });
             
-            console.log("✅ Gráfica principal creada");
+            console.log("Gráfica principal creada");
         }
 
-        function crearHistograma(temperaturas) {
-            const canvas = document.getElementById('histogramChart');
+        function crearGraficasPastel(datos) {
+            console.log("Creando gráficas de pastel");
+            
+            crearPastelRangos(datos.map(d => d.temperatura));
+            
+            crearPastelEstados(datos.map(d => d.temperatura));
+        }
+
+        function crearPastelRangos(temperaturas) {
+            const canvas = document.getElementById('pieChartRangos');
             if (!canvas) return;
             
             const ctx = canvas.getContext('2d');
             
-            if (histogramChart) histogramChart.destroy();
-
-            // Ajustar bins dinámicamente según los datos
-            const minTemp = Math.min(...temperaturas);
-            const maxTemp = Math.max(...temperaturas);
-            const binSize = 2;
-            
-            const bins = [];
-            for (let i = Math.floor(minTemp); i <= Math.ceil(maxTemp); i += binSize) {
-                const count = temperaturas.filter(temp => temp >= i && temp < i + binSize).length;
-                bins.push({ range: `${i}-${i+binSize}°C`, count: count });
+            if (pieChartRangos) {
+                pieChartRangos.destroy();
             }
+            const rangos = [
+                { min: 15, max: 20, label: '15-20°C', color: '#64b5f6' },
+                { min: 20, max: 25, label: '20-25°C', color: '#4fc3f7' },
+                { min: 25, max: 28, label: '25-28°C', color: '#ffeb3b' },
+                { min: 28, max: 32, label: '28-32°C', color: '#ffb74d' },
+                { min: 32, max: 40, label: '32-40°C', color: '#ff6b6b' }
+            ];
+            const conteoRangos = rangos.map(rango => {
+                const count = temperaturas.filter(temp => temp >= rango.min && temp < rango.max).length;
+                return {
+                    label: rango.label,
+                    count: count,
+                    porcentaje: ((count / temperaturas.length) * 100).toFixed(1),
+                    color: rango.color
+                };
+            });
 
-            histogramChart = new Chart(ctx, {
-                type: 'bar',
+            console.log("Distribución por rangos:", conteoRangos);
+
+            pieChartRangos = new Chart(ctx, {
+                type: 'pie',
                 data: {
-                    labels: bins.map(b => b.range),
+                    labels: conteoRangos.map(r => `${r.label} (${r.porcentaje}%)`),
                     datasets: [{
-                        label: 'Frecuencia',
-                        data: bins.map(b => b.count),
-                        backgroundColor: 'rgba(255, 235, 59, 0.8)',
-                        borderColor: '#ffeb3b',
+                        data: conteoRangos.map(r => r.count),
+                        backgroundColor: conteoRangos.map(r => r.color),
+                        borderColor: 'white',
                         borderWidth: 2
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: 'white',
+                                font: { size: 11 },
+                                padding: 15
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${label.split(' (')[0]}: ${value} mediciones (${percentage}%)`;
+                                }
+                            }
+                        }
+                    },
                     animation: {
                         duration: 1000
-                    },
-                    plugins: {
-                        legend: { 
-                            display: true, 
-                            labels: { color: 'white', font: { size: 14 } } 
-                        }
-                    },
-                    scales: {
-                        x: { 
-                            ticks: { color: 'white', font: { size: 11 } },
-                            grid: { color: 'rgba(255,255,255,0.2)' }
-                        },
-                        y: { 
-                            ticks: { color: 'white', font: { size: 12 } },
-                            grid: { color: 'rgba(255,255,255,0.2)' },
-                            beginAtZero: true
-                        }
                     }
                 }
             });
+        }
+
+        function crearPastelEstados(temperaturas) {
+            const canvas = document.getElementById('pieChartEstados');
+            if (!canvas) return;
             
-            console.log("✅ Histograma creado");
+            const ctx = canvas.getContext('2d');
+            
+            if (pieChartEstados) {
+                pieChartEstados.destroy();
+            }
+
+            // Definir estados
+            const estados = [
+                { tipo: 'Frío', max: 20, color: '#64b5f6' },
+                { tipo: 'Normal', min: 20, max: 28, color: '#4fc3f7' },
+                { tipo: 'Caluroso', min: 28, color: '#ff6b6b' }
+            ];
+
+            // Contar por estado
+            const conteoEstados = estados.map(estado => {
+                let count;
+                if (estado.tipo === 'Frío') {
+                    count = temperaturas.filter(temp => temp <= estado.max).length;
+                } else if (estado.tipo === 'Caluroso') {
+                    count = temperaturas.filter(temp => temp >= estado.min).length;
+                } else {
+                    count = temperaturas.filter(temp => temp > estado.min && temp < estado.max).length;
+                }
+                
+                return {
+                    label: estado.tipo,
+                    count: count,
+                    porcentaje: ((count / temperaturas.length) * 100).toFixed(1),
+                    color: estado.color
+                };
+            });
+
+            console.log("Distribución por estados:", conteoEstados);
+
+            pieChartEstados = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: conteoEstados.map(e => `${e.label} (${e.porcentaje}%)`),
+                    datasets: [{
+                        data: conteoEstados.map(e => e.count),
+                        backgroundColor: conteoEstados.map(e => e.color),
+                        borderColor: 'white',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: 'white',
+                                font: { size: 11 },
+                                padding: 15
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${label.split(' (')[0]}: ${value} mediciones (${percentage}%)`;
+                                }
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 1000
+                    }
+                }
+            });
         }
 
         function mostrarDatosDeEjemploTemporal() {
@@ -431,7 +550,7 @@
             const datos = [25.3, 25.8, 26.2, 25.9, 25.5];
             
             crearGraficaPrincipal(labels, datos);
-            crearHistograma(datos);
+            crearGraficasPastel(datos);
         }
 
         function actualizarTabla() {
@@ -506,7 +625,7 @@
         setTimeout(function() {
             const loadingElement = document.getElementById('loadingChart');
             if (loadingElement && loadingElement.style.display !== 'none') {
-                console.log("Forzando visualización...");
+                console.log("⏰ Forzando visualización...");
                 mostrarDatosDeEjemploTemporal();
             }
         }, 5000);
