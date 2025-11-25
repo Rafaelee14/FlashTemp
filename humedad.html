@@ -48,6 +48,18 @@
             width: 100% !important;
             height: 100% !important;
         }
+        .pie-charts-container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .pie-chart-wrapper {
+            flex: 1;
+            min-width: 300px;
+            height: 300px;
+            position: relative;
+        }
         .filtros {
             display: flex;
             gap: 10px;
@@ -94,6 +106,12 @@
         .estado-seco { color: #ffb74d; font-weight: bold; }
         .loading { color: #bcddff; margin: 10px 0; }
         a { color: #bcddff; text-decoration: none; padding: 8px 16px; border: 2px solid #bcddff; border-radius: 6px; margin: 5px; display: inline-block; }
+        .chart-title {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            color: #4fc3f7;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -119,9 +137,16 @@
         </div>
 
         <div class="chart-container">
-            <h3>Distribución de Humedades</h3>
-            <div class="chart-wrapper">
-                <canvas id="distribucionChart"></canvas>
+            <h3>Análisis de Humedad</h3>
+            <div class="pie-charts-container">
+                <div class="pie-chart-wrapper">
+                    <div class="chart-title">Distribución por Rango</div>
+                    <canvas id="pieChartRangos"></canvas>
+                </div>
+                <div class="pie-chart-wrapper">
+                    <div class="chart-title">Distribución por Estado</div>
+                    <canvas id="pieChartEstados"></canvas>
+                </div>
             </div>
         </div>
 
@@ -141,7 +166,7 @@
             </div>
         </div>
         
-        <a href="https://flashtemp.netlify.app">← Inicio</a>
+        <a href="hhttps://rafaelee14.github.io/FlashTemp/">← Inicio</a>
         <a href="temperatura.html">Temperatura →</a>
     </div>
 
@@ -161,7 +186,7 @@
 
         firebase.initializeApp(firebaseConfig);
         
-        let humedadChart, distribucionChart;
+        let humedadChart, pieChartRangos, pieChartEstados;
         let todosLosDatos = [];
 
         async function cargarTodosLosDatos() {
@@ -189,17 +214,16 @@
                     });
                     
                     todosLosDatos.sort((a, b) => b.timestamp - a.timestamp);
-                    console.log("✅ Datos procesados:", todosLosDatos.length);
-                    console.log("💧 Ejemplo de datos:", todosLosDatos.slice(0, 3));
+                    console.log("Datos procesados:", todosLosDatos.length);
+                    console.log("Ejemplo de datos:", todosLosDatos.slice(0, 3));
                     
-                    // OCULTAR MENSAJE DE CARGA
                     const loadingElement = document.getElementById('loadingChart');
                     if (loadingElement) loadingElement.style.display = 'none';
                     
                     cargarDatosGrafica();
                     actualizarTabla();
                 } else {
-                    console.log("❌ No hay datos históricos");
+                    console.log("No hay datos históricos");
                     mostrarDatosDeEjemploTemporal();
                 }
             } catch (error) {
@@ -210,7 +234,7 @@
 
         function cargarDatosGrafica() {
             if (todosLosDatos.length === 0) {
-                console.log("❌ No hay datos para gráficas");
+                console.log("No hay datos para gráficas");
                 mostrarDatosDeEjemploTemporal();
                 return;
             }
@@ -220,17 +244,17 @@
             fechaLimite.setDate(fechaLimite.getDate() - dias);
             fechaLimite.setHours(0, 0, 0, 0); // Resetear a inicio del día
             
-            console.log("📅 Fecha límite para filtrar:", fechaLimite);
-            console.log("💧 Total de datos disponibles:", todosLosDatos.length);
+            console.log("Fecha límite para filtrar:", fechaLimite);
+            console.log("Total de datos disponibles:", todosLosDatos.length);
 
             // CORRECCIÓN PRINCIPAL: Usar el timestamp ya convertido
             const datosFiltrados = todosLosDatos.filter(d => d.timestamp >= fechaLimite);
             
-            console.log("📈 Datos filtrados para gráfica:", datosFiltrados.length);
+            console.log("Datos filtrados para gráfica:", datosFiltrados.length);
 
             if (datosFiltrados.length === 0) {
                 console.log("⚠️ No hay datos filtrados - mostrando todos los datos disponibles");
-                // Si no hay datos en el rango, mostrar todos los disponibles
+    
                 crearGraficasConDatos(todosLosDatos);
                 return;
             }
@@ -238,9 +262,8 @@
             crearGraficasConDatos(datosFiltrados);
         }
 
-        // NUEVA FUNCIÓN AUXILIAR MEJORADA
         function crearGraficasConDatos(datos) {
-            console.log("🎨 Creando gráficas con", datos.length, "datos");
+            console.log("Creando gráficas con", datos.length, "datos");
             
             if (datos.length === 0) {
                 console.log("❌ No hay datos para crear gráficas");
@@ -253,10 +276,10 @@
             let promedios = [];
 
             if (dias === 1) {
-                // Agrupar por hora para últimas 24h
+             
                 const datosPorHora = {};
                 datos.forEach(dato => {
-                    const hora = dato.hora.substring(0, 5); // Tomar solo HH:MM
+                    const hora = dato.hora.substring(0, 5); 
                     if (!datosPorHora[hora]) datosPorHora[hora] = [];
                     datosPorHora[hora].push(dato.humedad);
                 });
@@ -268,7 +291,7 @@
                 });
 
             } else {
-                // Agrupar por fecha para múltiples días
+               
                 const datosPorDia = {};
                 datos.forEach(dato => {
                     if (!datosPorDia[dato.fecha]) datosPorDia[dato.fecha] = [];
@@ -281,30 +304,28 @@
                     return humedades.reduce((a, b) => a + b, 0) / humedades.length;
                 });
 
-                // Formatear fechas para mostrar
                 labels = labels.map(fecha => {
                     const [año, mes, dia] = fecha.split('-');
                     return `${dia}/${mes}`;
                 });
             }
 
-            console.log("🏷️ Labels:", labels);
-            console.log("📊 Promedios:", promedios);
+            console.log("Labels:", labels);
+            console.log("Promedios:", promedios);
             
             crearGraficaPrincipal(labels, promedios);
-            crearDistribucion(datos.map(d => d.humedad));
+            crearGraficasPastel(datos);
         }
 
         function crearGraficaPrincipal(labels, datos) {
             const canvas = document.getElementById('humChart');
             if (!canvas) {
-                console.log("❌ Canvas no encontrado");
+                console.log("Canvas no encontrado");
                 return;
             }
             
             const ctx = canvas.getContext('2d');
             
-            // Destruir gráfica anterior
             if (humedadChart) {
                 humedadChart.destroy();
             }
@@ -361,67 +382,165 @@
                 }
             });
             
-            console.log("✅ Gráfica principal creada");
+            console.log("Gráfica principal creada");
         }
 
-        function crearDistribucion(humedades) {
-            const canvas = document.getElementById('distribucionChart');
+        function crearGraficasPastel(datos) {
+            console.log("Creando gráficas de pastel para humedad...");
+            
+            crearPastelRangos(datos.map(d => d.humedad));
+            
+            crearPastelEstados(datos.map(d => d.humedad));
+        }
+
+        function crearPastelRangos(humedades) {
+            const canvas = document.getElementById('pieChartRangos');
             if (!canvas) return;
             
             const ctx = canvas.getContext('2d');
             
-            if (distribucionChart) distribucionChart.destroy();
-
-            // Ajustar bins dinámicamente según los datos
-            const minHum = Math.min(...humedades);
-            const maxHum = Math.max(...humedades);
-            const binSize = 10;
-            
-            const bins = [];
-            for (let i = 0; i <= 100; i += binSize) {
-                const count = humedades.filter(hum => hum >= i && hum < i + binSize).length;
-                bins.push({ range: `${i}-${i+binSize}%`, count: count });
+            if (pieChartRangos) {
+                pieChartRangos.destroy();
             }
 
-            distribucionChart = new Chart(ctx, {
-                type: 'bar',
+            const rangos = [
+                { min: 0, max: 20, label: '0-20%', color: '#ffb74d' },     
+                { min: 20, max: 40, label: '20-40%', color: '#ffd54f' },   
+                { min: 40, max: 60, label: '40-60%', color: '#81c784' },    
+                { min: 60, max: 80, label: '60-80%', color: '#4fc3f7' },    
+                { min: 80, max: 100, label: '80-100%', color: '#2196f3' }   
+            ];
+
+            const conteoRangos = rangos.map(rango => {
+                const count = humedades.filter(hum => hum >= rango.min && hum < rango.max).length;
+                return {
+                    label: rango.label,
+                    count: count,
+                    porcentaje: ((count / humedades.length) * 100).toFixed(1),
+                    color: rango.color
+                };
+            });
+
+            console.log("Distribución por rangos de humedad:", conteoRangos);
+
+            pieChartRangos = new Chart(ctx, {
+                type: 'pie',
                 data: {
-                    labels: bins.map(b => b.range),
+                    labels: conteoRangos.map(r => `${r.label} (${r.porcentaje}%)`),
                     datasets: [{
-                        label: 'Frecuencia',
-                        data: bins.map(b => b.count),
-                        backgroundColor: 'rgba(33, 150, 243, 0.8)',
-                        borderColor: '#2196f3',
+                        data: conteoRangos.map(r => r.count),
+                        backgroundColor: conteoRangos.map(r => r.color),
+                        borderColor: 'white',
                         borderWidth: 2
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: 'white',
+                                font: { size: 11 },
+                                padding: 15
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${label.split(' (')[0]}: ${value} mediciones (${percentage}%)`;
+                                }
+                            }
+                        }
+                    },
                     animation: {
                         duration: 1000
-                    },
-                    plugins: {
-                        legend: { 
-                            display: true, 
-                            labels: { color: 'white', font: { size: 14 } } 
-                        }
-                    },
-                    scales: {
-                        x: { 
-                            ticks: { color: 'white', font: { size: 11 } },
-                            grid: { color: 'rgba(255,255,255,0.2)' }
-                        },
-                        y: { 
-                            ticks: { color: 'white', font: { size: 12 } },
-                            grid: { color: 'rgba(255,255,255,0.2)' },
-                            beginAtZero: true
-                        }
                     }
                 }
             });
+        }
+
+        function crearPastelEstados(humedades) {
+            const canvas = document.getElementById('pieChartEstados');
+            if (!canvas) return;
             
-            console.log("✅ Gráfica de distribución creada");
+            const ctx = canvas.getContext('2d');
+            
+            if (pieChartEstados) {
+                pieChartEstados.destroy();
+            }
+
+            const estados = [
+                { tipo: 'Seco', max: 30, color: '#ffb74d' },      
+                { tipo: 'Normal', min: 30, max: 70, color: '#81c784' }, 
+                { tipo: 'Húmedo', min: 70, color: '#2196f3' }       
+            ];
+
+            const conteoEstados = estados.map(estado => {
+                let count;
+                if (estado.tipo === 'Seco') {
+                    count = humedades.filter(hum => hum <= estado.max).length;
+                } else if (estado.tipo === 'Húmedo') {
+                    count = humedades.filter(hum => hum >= estado.min).length;
+                } else {
+                    count = humedades.filter(hum => hum > estado.min && hum < estado.max).length;
+                }
+                
+                return {
+                    label: estado.tipo,
+                    count: count,
+                    porcentaje: ((count / humedades.length) * 100).toFixed(1),
+                    color: estado.color
+                };
+            });
+
+            console.log("Distribución por estados de humedad:", conteoEstados);
+
+            pieChartEstados = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: conteoEstados.map(e => `${e.label} (${e.porcentaje}%)`),
+                    datasets: [{
+                        data: conteoEstados.map(e => e.count),
+                        backgroundColor: conteoEstados.map(e => e.color),
+                        borderColor: 'white',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: 'white',
+                                font: { size: 11 },
+                                padding: 15
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${label.split(' (')[0]}: ${value} mediciones (${percentage}%)`;
+                                }
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 1000
+                    }
+                }
+            });
         }
 
         function mostrarDatosDeEjemploTemporal() {
@@ -433,7 +552,7 @@
             const datos = [65, 68, 72, 70, 67];
             
             crearGraficaPrincipal(labels, datos);
-            crearDistribucion(datos);
+            crearGraficasPastel(datos);
         }
 
         function actualizarTabla() {
@@ -498,17 +617,15 @@
             }
         });
 
-        // INICIALIZAR
         document.addEventListener('DOMContentLoaded', function() {
-            console.log("🚀 Iniciando aplicación de humedad...");
+            console.log("Iniciando aplicación de humedad...");
             cargarTodosLosDatos();
         });
 
-        // BACKUP POR SI FALLA LA CARGA
         setTimeout(function() {
             const loadingElement = document.getElementById('loadingChart');
             if (loadingElement && loadingElement.style.display !== 'none') {
-                console.log("⏰ Forzando visualización...");
+                console.log("Forzando visualización...");
                 mostrarDatosDeEjemploTemporal();
             }
         }, 5000);
