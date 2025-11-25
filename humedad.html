@@ -8,13 +8,17 @@
     <link rel="icon" type="image/png" href="https://i.ibb.co/Z1wrYWB0/logo-flashtemp-modified.png" sizes="32x32">
     <link rel="icon" type="image/png" href="https://i.ibb.co/Z1wrYWB0/logo-flashtemp-modified.png" sizes="16x16">
     <link rel="apple-touch-icon" href="https://i.ibb.co/Z1wrYWB0/logo-flashtemp-modified.png">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #104554;
             color: white;
             text-align: center;
-            padding: 50px;
+            padding: 20px;
             background-image: url(https://cdn.pixabay.com/photo/2022/06/18/21/47/tree-7270738_1280.jpg);
             background-size: cover;
             background-position: center;
@@ -24,25 +28,27 @@
             margin: 0;
         }
         h1 {
-            font-size: 3rem;
-            margin-bottom: 30px;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
         }
         .hum-value {
-            font-size: 4rem;
+            font-size: 3rem;
             font-weight: bold;
             color: #4fc3f7;
-            margin: 40px 0;
+            margin: 20px 0;
             text-shadow: 2px 2px 8px rgba(0,0,0,0.7);
         }
         a {
             color: #bcddff;
             text-decoration: none;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             padding: 10px 20px;
             border: 2px solid #bcddff;
             border-radius: 8px;
             transition: all 0.3s ease;
+            display: inline-block;
+            margin: 10px;
         }
         a:hover {
             background: #bcddff;
@@ -52,28 +58,224 @@
             background: rgba(255,255,255,0.1);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
-            padding: 40px;
+            padding: 30px;
             border-radius: 15px;
-            max-width: 600px;
-            margin: 0 auto;
+            max-width: 1200px;
+            margin: 0 auto 20px;
             border: 2px solid rgba(255,255,255,0.2);
+        }
+        .chart-container {
+            background: rgba(255,255,255,0.05);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .filtros {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 25px 0;
+            flex-wrap: wrap;
+        }
+        select, button, input[type="date"] {
+            padding: 12px 20px;
+            border-radius: 8px;
+            border: 2px solid #bcddff;
+            background: rgba(188, 221, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        select:hover, button:hover {
+            background: rgba(188, 221, 255, 0.3);
+        }
+        select option {
+            background: #104554;
+            color: white;
+        }
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+        }
+        .estadisticas {
+            display: flex;
+            justify-content: space-around;
+            margin: 25px 0;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .estadistica {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+            min-width: 150px;
+        }
+        .estadistica .valor {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #4fc3f7;
+            margin: 10px 0;
+        }
+        .estadistica .label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        canvas {
+            max-width: 100%;
+            height: 400px;
+        }
+        .loading {
+            color: #bcddff;
+            font-size: 1.2rem;
+            margin: 20px 0;
+        }
+        .tabla-container {
+            overflow-x: auto;
+            margin: 20px 0;
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+        }
+        .tabla-historico {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(255,255,255,0.05);
+        }
+        .tabla-historico th {
+            background: rgba(188, 221, 255, 0.2);
+            padding: 15px;
+            text-align: left;
+            font-weight: bold;
+            color: #4fc3f7;
+            border-bottom: 2px solid rgba(255,255,255,0.2);
+            position: sticky;
+            top: 0;
+        }
+        .tabla-historico td {
+            padding: 12px 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            color: white;
+        }
+        .tabla-historico tr:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        .estado-humedo {
+            color: #4fc3f7;
+            font-weight: bold;
+        }
+        .estado-normal {
+            color: #81c784;
+        }
+        .estado-seco {
+            color: #ffb74d;
+            font-weight: bold;
+        }
+        .paginacion {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .paginacion button {
+            padding: 8px 16px;
+            background: rgba(188, 221, 255, 0.2);
+            border: 1px solid #bcddff;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .paginacion button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>💧 Datos de Humedad</h1>
-        <p>Aquí irán las gráficas y datos detallados de humedad</p>
+        <h1>Datos de Humedad</h1>
         
         <div class="hum-value" id="humActual">-- %</div>
         
+        <div class="filtros">
+            <select id="selectRango">
+                <option value="1">Últimas 24 horas</option>
+                <option value="3">Últimos 3 días</option>
+                <option value="7">Última semana</option>
+                <option value="30">Último mes</option>
+            </select>
+            <button onclick="cargarDatosHistoricos()">🔄 Actualizar Gráfica</button>
+        </div>
+
+        <div class="estadisticas">
+            <div class="estadistica">
+                <div class="label">Máxima</div>
+                <div class="valor" id="maxHum">--%</div>
+            </div>
+            <div class="estadistica">
+                <div class="label">Mínima</div>
+                <div class="valor" id="minHum">--%</div>
+            </div>
+            <div class="estadistica">
+                <div class="label">Promedio</div>
+                <div class="valor" id="avgHum">--%</div>
+            </div>
+            <div class="estadistica">
+                <div class="label">Registros</div>
+                <div class="valor" id="totalRegistros">--</div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <h3>Historial de Humedad</h3>
+            <div class="loading" id="loadingText">Cargando datos históricos...</div>
+            <canvas id="humChart"></canvas>
+        </div>
+
+        <!-- SECCIÓN TABLA HISTÓRICA -->
+        <div class="chart-container">
+            <h3>Tabla Histórica de Humedad</h3>
+            
+            <div class="filtros">
+                <input type="date" id="filtroFecha" onchange="filtrarPorFecha()">
+                <button onclick="mostrarTodasLasFechas()">📅 Mostrar Todas las Fechas</button>
+                <button onclick="exportarCSV()">📊 Exportar CSV</button>
+            </div>
+
+            <div class="tabla-container">
+                <table class="tabla-historico" id="tablaHumedad">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Hora</th>
+                            <th>Humedad</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cuerpoTabla">
+                        <!-- Los datos se cargarán aquí -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="paginacion">
+                <button onclick="cambiarPagina(-1)" id="btnAnterior">◀ Anterior</button>
+                <span id="infoPagina">Página 1 de 1</span>
+                <button onclick="cambiarPagina(1)" id="btnSiguiente">Siguiente ▶</button>
+            </div>
+        </div>
+        
         <a href="https://flashtemp.netlify.app">← Volver al Inicio</a>
+        <a href="temperatura.html">Ver Datos de Temperatura →</a>
     </div>
 
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
     <script>
+        // Configuración Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyBm2mXJJpJZulKtTfLhoPX2-f2KhzdnSQw",
             authDomain: "flashtemp-87a59.firebaseapp.com",
@@ -86,11 +288,300 @@
 
         firebase.initializeApp(firebaseConfig);
         
+        let humChart;
+        let datosHistoricos = [];
+
+        // Variables para la tabla
+        let todosLosDatos = [];
+        let datosFiltrados = [];
+        const registrosPorPagina = 10;
+        let paginaActual = 1;
+
+        // Cargar datos históricos para gráfica
+        async function cargarDatosHistoricos() {
+            document.getElementById('loadingText').style.display = 'block';
+            
+            const dias = parseInt(document.getElementById('selectRango').value);
+            datosHistoricos = [];
+            
+            try {
+                const snapshot = await firebase.database().ref('historico').once('value');
+                const historico = snapshot.val();
+                
+                if (historico) {
+                    // Calcular fecha límite
+                    const fechaLimite = new Date();
+                    fechaLimite.setDate(fechaLimite.getDate() - dias);
+                    
+                    // Procesar datos de HUMEDAD
+                    Object.keys(historico).forEach(fecha => {
+                        const fechaDato = new Date(fecha);
+                        if (fechaDato >= fechaLimite) {
+                            Object.keys(historico[fecha]).forEach(hora => {
+                                const dato = historico[fecha][hora];
+                                datosHistoricos.push({
+                                    fecha: fecha,
+                                    hora: hora,
+                                    humedad: dato.humedad,
+                                    timestamp: new Date(fecha + 'T' + hora + ':00')
+                                });
+                            });
+                        }
+                    });
+                    
+                    // Ordenar por fecha
+                    datosHistoricos.sort((a, b) => a.timestamp - b.timestamp);
+                    
+                    actualizarEstadisticas();
+                    actualizarGrafica();
+                } else {
+                    document.getElementById('loadingText').innerHTML = 'No hay datos históricos disponibles aún. El ESP32 guardará datos cada hora.';
+                }
+            } catch (error) {
+                console.error('Error cargando datos:', error);
+                document.getElementById('loadingText').innerHTML = 'Error cargando datos históricos';
+            }
+            
+            document.getElementById('loadingText').style.display = 'none';
+        }
+
+        // Actualizar estadísticas
+        function actualizarEstadisticas() {
+            if (datosHistoricos.length > 0) {
+                const humedades = datosHistoricos.map(d => d.humedad);
+                const maxHum = Math.max(...humedades).toFixed(1);
+                const minHum = Math.min(...humedades).toFixed(1);
+                const avgHum = (humedades.reduce((a, b) => a + b, 0) / humedades.length).toFixed(1);
+                
+                document.getElementById('maxHum').textContent = maxHum + '%';
+                document.getElementById('minHum').textContent = minHum + '%';
+                document.getElementById('avgHum').textContent = avgHum + '%';
+                document.getElementById('totalRegistros').textContent = datosHistoricos.length;
+            }
+        }
+
+        // Actualizar gráfica
+        function actualizarGrafica() {
+            const ctx = document.getElementById('humChart').getContext('2d');
+            
+            if (humChart) {
+                humChart.destroy();
+            }
+            
+            // Formatear etiquetas según el rango
+            const labels = datosHistoricos.map(d => {
+                const dias = parseInt(document.getElementById('selectRango').value);
+                if (dias <= 1) {
+                    return d.hora;
+                } else if (dias <= 7) {
+                    return `${d.fecha.split('-')[2]}/${d.fecha.split('-')[1]} ${d.hora}`;
+                } else {
+                    return `${d.fecha.split('-')[2]}/${d.fecha.split('-')[1]}`;
+                }
+            });
+
+            humChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Humedad (%)',
+                        data: datosHistoricos.map(d => d.humedad),
+                        borderColor: '#4fc3f7',
+                        backgroundColor: 'rgba(79, 195, 247, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#4fc3f7',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: 'white',
+                                font: { size: 14 }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#4fc3f7',
+                            bodyColor: 'white'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: 'white',
+                                maxRotation: 45
+                            },
+                            grid: {
+                                color: 'rgba(255,255,255,0.1)'
+                            }
+                        },
+                        y: {
+                            ticks: {
+                                color: 'white'
+                            },
+                            grid: {
+                                color: 'rgba(255,255,255,0.1)'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Humedad (%)',
+                                color: 'white'
+                            },
+                            min: 0,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        }
+
+        // Cargar datos para la tabla
+        async function cargarDatosTabla() {
+            try {
+                const snapshot = await firebase.database().ref('historico').once('value');
+                const historico = snapshot.val();
+                
+                todosLosDatos = [];
+                if (historico) {
+                    Object.keys(historico).forEach(fecha => {
+                        Object.keys(historico[fecha]).forEach(hora => {
+                            const dato = historico[fecha][hora];
+                            todosLosDatos.push({
+                                fecha: fecha,
+                                hora: hora,
+                                humedad: dato.humedad,
+                                timestamp: new Date(fecha + 'T' + hora + ':00')
+                            });
+                        });
+                    });
+                    
+                    // Ordenar por fecha (más reciente primero)
+                    todosLosDatos.sort((a, b) => b.timestamp - a.timestamp);
+                    datosFiltrados = [...todosLosDatos];
+                    actualizarTabla();
+                }
+            } catch (error) {
+                console.error('Error cargando datos para tabla:', error);
+            }
+        }
+
+        // Filtrar por fecha específica
+        function filtrarPorFecha() {
+            const fechaSeleccionada = document.getElementById('filtroFecha').value;
+            
+            if (fechaSeleccionada) {
+                datosFiltrados = todosLosDatos.filter(dato => dato.fecha === fechaSeleccionada);
+                paginaActual = 1;
+                actualizarTabla();
+            }
+        }
+
+        // Mostrar todas las fechas
+        function mostrarTodasLasFechas() {
+            document.getElementById('filtroFecha').value = '';
+            datosFiltrados = [...todosLosDatos];
+            paginaActual = 1;
+            actualizarTabla();
+        }
+
+        // Determinar estado de la humedad
+        function obtenerEstadoHumedad(hum) {
+            if (hum >= 70) return {clase: 'estado-humedo', texto: 'Húmedo'};
+            if (hum <= 40) return {clase: 'estado-seco', texto: 'Seco'};
+            return {clase: 'estado-normal', texto: 'Normal'};
+        }
+
+        // Actualizar tabla
+        function actualizarTabla() {
+            const cuerpoTabla = document.getElementById('cuerpoTabla');
+            const infoPagina = document.getElementById('infoPagina');
+            const btnAnterior = document.getElementById('btnAnterior');
+            const btnSiguiente = document.getElementById('btnSiguiente');
+            
+            // Calcular paginación
+            const totalPaginas = Math.ceil(datosFiltrados.length / registrosPorPagina);
+            const inicio = (paginaActual - 1) * registrosPorPagina;
+            const fin = inicio + registrosPorPagina;
+            const datosPagina = datosFiltrados.slice(inicio, fin);
+            
+            // Actualizar controles de paginación
+            btnAnterior.disabled = paginaActual <= 1;
+            btnSiguiente.disabled = paginaActual >= totalPaginas;
+            infoPagina.textContent = `Página ${paginaActual} de ${totalPaginas} (${datosFiltrados.length} registros)`;
+            
+            // Generar filas de la tabla
+            cuerpoTabla.innerHTML = '';
+            
+            if (datosPagina.length === 0) {
+                cuerpoTabla.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 20px;">No hay datos para mostrar</td></tr>`;
+                return;
+            }
+            
+            datosPagina.forEach(dato => {
+                const estado = obtenerEstadoHumedad(dato.humedad);
+                const fila = document.createElement('tr');
+                fila.innerHTML = `
+                    <td>${dato.fecha}</td>
+                    <td>${dato.hora}</td>
+                    <td>${dato.humedad.toFixed(1)} %</td>
+                    <td class="${estado.clase}">${estado.texto}</td>
+                `;
+                cuerpoTabla.appendChild(fila);
+            });
+        }
+
+        // Cambiar página
+        function cambiarPagina(direccion) {
+            const totalPaginas = Math.ceil(datosFiltrados.length / registrosPorPagina);
+            paginaActual += direccion;
+            
+            if (paginaActual < 1) paginaActual = 1;
+            if (paginaActual > totalPaginas) paginaActual = totalPaginas;
+            
+            actualizarTabla();
+        }
+
+        // Exportar a CSV
+        function exportarCSV() {
+            if (datosFiltrados.length === 0) return;
+            
+            let csv = 'Fecha,Hora,Humedad (%),Estado\n';
+            
+            datosFiltrados.forEach(dato => {
+                const estado = obtenerEstadoHumedad(dato.humedad);
+                csv += `"${dato.fecha}","${dato.hora}",${dato.humedad.toFixed(1)},"${estado.texto}"\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `humedad_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        // Humedad actual en tiempo real
         firebase.database().ref('humedad').on('value', (snapshot) => {
             const hum = snapshot.val();
             if (hum !== null) {
-                document.getElementById('humActual').innerText = hum + " %";
+                document.getElementById('humActual').innerText = hum.toFixed(1) + " %";
             }
+        });
+
+        // Cargar datos al iniciar
+        document.addEventListener('DOMContentLoaded', function() {
+            cargarDatosHistoricos();
+            cargarDatosTabla();
         });
     </script>
 </body>
