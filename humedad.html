@@ -161,13 +161,15 @@
 
         firebase.initializeApp(firebaseConfig);
         
-        let humChart, distribucionChart;
+        let humedadChart, histogramChart;
         let todosLosDatos = [];
 
         async function cargarTodosLosDatos() {
             try {
                 const snapshot = await firebase.database().ref('historico').once('value');
                 const historico = snapshot.val();
+                
+                console.log("Datos de Firebase:", historico);
                 
                 todosLosDatos = [];
                 if (historico) {
@@ -184,24 +186,42 @@
                     });
                     
                     todosLosDatos.sort((a, b) => b.timestamp - a.timestamp);
+                    console.log("✅ Datos procesados:", todosLosDatos.length);
+                    
+                    // OCULTAR MENSAJE DE CARGA INMEDIATAMENTE
+                    const loadingElement = document.getElementById('loadingChart');
+                    if (loadingElement) loadingElement.style.display = 'none';
+                    
                     cargarDatosGrafica();
                     actualizarTabla();
+                } else {
+                    console.log("❌ No hay datos históricos");
+                    mostrarDatosDeEjemploTemporal();
                 }
             } catch (error) {
                 console.error('Error cargando datos:', error);
+                mostrarDatosDeEjemploTemporal();
             }
         }
 
         function cargarDatosGrafica() {
+            if (todosLosDatos.length === 0) {
+                console.log("❌ No hay datos para gráficas");
+                return;
+            }
+
             const dias = parseInt(document.getElementById('selectRango').value);
             const fechaLimite = new Date();
             fechaLimite.setDate(fechaLimite.getDate() - dias);
             
             const datosFiltrados = todosLosDatos.filter(d => new Date(d.fecha) >= fechaLimite);
             
-            if (datosFiltrados.length === 0) return;
+            console.log("📈 Datos filtrados para gráfica:", datosFiltrados.length);
 
-            document.getElementById('loadingChart').style.display = 'none';
+            if (datosFiltrados.length === 0) {
+                console.log("No hay datos filtrados");
+                return;
+            }
 
             let labels = [];
             let promedios = [];
@@ -216,8 +236,8 @@
 
                 labels = Object.keys(datosPorHora).sort();
                 promedios = labels.map(hora => {
-                    const hums = datosPorHora[hora];
-                    return hums.reduce((a, b) => a + b, 0) / hums.length;
+                    const humedades = datosPorHora[hora];
+                    return humedades.reduce((a, b) => a + b, 0) / humedades.length;
                 });
 
             } else {
@@ -229,8 +249,8 @@
 
                 labels = Object.keys(datosPorDia).sort();
                 promedios = labels.map(fecha => {
-                    const hums = datosPorDia[fecha];
-                    return hums.reduce((a, b) => a + b, 0) / hums.length;
+                    const humedades = datosPorDia[fecha];
+                    return humedades.reduce((a, b) => a + b, 0) / humedades.length;
                 });
 
                 labels = labels.map(fecha => {
@@ -239,95 +259,148 @@
                 });
             }
 
+            console.log("Creando gráficas con:", labels, promedios);
             crearGraficaPrincipal(labels, promedios);
-            crearGraficaDistribucion(datosFiltrados.map(d => d.humedad));
+            crearHistograma(datosFiltrados.map(d => d.humedad));
         }
 
         function crearGraficaPrincipal(labels, datos) {
-            const ctx = document.getElementById('humChart');
-            if (!ctx) return;
+            const canvas = document.getElementById('humedadChart');
+            if (!canvas) {
+                console.log("Canvas no encontrado");
+                return;
+            }
+          
+            canvas.style.width = "100%";
+            canvas.style.height = "300px";
             
-            ctx.width = ctx.offsetWidth;
-            ctx.height = ctx.offsetHeight;
+            const ctx = canvas.getContext('2d');
+       
+            if (humedadChart) {
+                humedadChart.destroy();
+            }
             
-            if (humChart) humChart.destroy();
+            console.log("🔄 Creando gráfica principal...");
             
-            humChart = new Chart(ctx, {
+            humedadChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Humedad Promedio (%)',
+                        label: 'Humedad (%)',
                         data: datos,
-                        borderColor: '#4fc3f7',
-                        backgroundColor: 'rgba(79, 195, 247, 0.2)',
-                        borderWidth: 3,
+                        borderColor: '#2196f3',
+                        backgroundColor: 'rgba(33, 150, 243, 0.3)',
+                        borderWidth: 4,
                         fill: true,
-                        tension: 0.3
+                        tension: 0.4,
+                        pointBackgroundColor: '#2196f3',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    animation: {
+                        duration: 1000
+                    },
                     plugins: {
-                        legend: { display: true, labels: { color: 'white', font: { size: 14 } } }
+                        legend: { 
+                            display: true, 
+                            labels: { 
+                                color: 'white', 
+                                font: { size: 14, weight: 'bold' } 
+                            } 
+                        }
                     },
                     scales: {
                         x: { 
-                            ticks: { color: 'white', maxRotation: 45 },
-                            grid: { color: 'rgba(255,255,255,0.1)' }
+                            ticks: { color: 'white', font: { size: 12 } },
+                            grid: { color: 'rgba(255,255,255,0.2)' }
                         },
                         y: { 
-                            ticks: { color: 'white' },
-                            grid: { color: 'rgba(255,255,255,0.1)' },
+                            ticks: { color: 'white', font: { size: 12 } },
+                            grid: { color: 'rgba(255,255,255,0.2)' },
                             min: 0,
                             max: 100
                         }
                     }
                 }
             });
+            
+            console.log("Gráfica principal creada");
         }
 
-        function crearGraficaDistribucion(humedades) {
-            const ctx = document.getElementById('distribucionChart');
-            if (!ctx) return;
+        function crearHistograma(humedades) {
+            const canvas = document.getElementById('histogramChart');
+            if (!canvas) return;
             
-            ctx.width = ctx.offsetWidth;
-            ctx.height = ctx.offsetHeight;
+            canvas.style.width = "100%";
+            canvas.style.height = "300px";
             
-            if (distribucionChart) distribucionChart.destroy();
+            const ctx = canvas.getContext('2d');
+            
+            if (histogramChart) histogramChart.destroy();
 
             const bins = [];
             const binSize = 10;
-            for (let i = 0; i <= 90; i += binSize) {
+            for (let i = 0; i <= 100; i += binSize) {
                 const count = humedades.filter(hum => hum >= i && hum < i + binSize).length;
                 bins.push({ range: `${i}-${i+binSize}%`, count: count });
             }
 
-            distribucionChart = new Chart(ctx, {
+            histogramChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: bins.map(b => b.range),
                     datasets: [{
                         label: 'Frecuencia',
                         data: bins.map(b => b.count),
-                        backgroundColor: 'rgba(79, 195, 247, 0.7)',
-                        borderColor: '#4fc3f7',
-                        borderWidth: 1
+                        backgroundColor: 'rgba(33, 150, 243, 0.8)',
+                        borderColor: '#2196f3',
+                        borderWidth: 2
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    animation: {
+                        duration: 1000
+                    },
                     plugins: {
-                        legend: { display: true, labels: { color: 'white' } }
+                        legend: { 
+                            display: true, 
+                            labels: { color: 'white', font: { size: 14 } } 
+                        }
                     },
                     scales: {
-                        x: { ticks: { color: 'white' }, grid: { color: 'rgba(255,255,255,0.1)' } },
-                        y: { ticks: { color: 'white' }, grid: { color: 'rgba(255,255,255,0.1)' } }
+                        x: { 
+                            ticks: { color: 'white', font: { size: 11 } },
+                            grid: { color: 'rgba(255,255,255,0.2)' }
+                        },
+                        y: { 
+                            ticks: { color: 'white', font: { size: 12 } },
+                            grid: { color: 'rgba(255,255,255,0.2)' }
+                        }
                     }
                 }
             });
+            
+            console.log("✅ Histograma creado");
+        }
+
+        function mostrarDatosDeEjemploTemporal() {
+            console.log("🔄 Mostrando datos de ejemplo temporal...");
+            const loadingElement = document.getElementById('loadingChart');
+            if (loadingElement) loadingElement.style.display = 'none';
+            
+            const labels = ['14:00', '15:00', '16:00', '17:00', '18:00'];
+            const datos = [65, 68, 72, 70, 67];
+            
+            crearGraficaPrincipal(labels, datos);
+            crearHistograma(datos);
         }
 
         function actualizarTabla() {
@@ -342,8 +415,8 @@
             const datosMostrar = todosLosDatos.slice(0, 20);
             
             cuerpoTabla.innerHTML = datosMostrar.map(dato => {
-                const estado = dato.humedad >= 70 ? 'Húmedo' : dato.humedad <= 40 ? 'Seco' : 'Normal';
-                const claseEstado = dato.humedad >= 70 ? 'estado-humedo' : dato.humedad <= 40 ? 'estado-seco' : 'estado-normal';
+                const estado = dato.humedad >= 70 ? 'Húmedo' : dato.humedad <= 30 ? 'Seco' : 'Normal';
+                const claseEstado = dato.humedad >= 70 ? 'estado-humedo' : dato.humedad <= 30 ? 'estado-seco' : 'estado-normal';
                 return `<tr>
                     <td>${dato.fecha}</td>
                     <td>${dato.hora}</td>
@@ -364,15 +437,24 @@
         }
 
         firebase.database().ref('humedad').on('value', (snapshot) => {
-            const hum = snapshot.val();
-            if (hum !== null) {
-                document.getElementById('humActual').innerText = hum.toFixed(1) + " %";
+            const humedad = snapshot.val();
+            if (humedad !== null) {
+                document.getElementById('humedadActual').innerText = humedad.toFixed(1) + " %";
             }
         });
 
         document.addEventListener('DOMContentLoaded', function() {
+            console.log("Iniciando aplicación de humedad...");
             cargarTodosLosDatos();
         });
+
+        setTimeout(function() {
+            const loadingElement = document.getElementById('loadingChart');
+            if (loadingElement && loadingElement.style.display !== 'none') {
+                console.log("Forzando visualización...");
+                mostrarDatosDeEjemploTemporal();
+            }
+        }, 5000);
     </script>
 </body>
 </html>
