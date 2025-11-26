@@ -213,17 +213,16 @@
                     });
                     
                     todosLosDatos.sort((a, b) => b.timestamp - a.timestamp);
-                    console.log("✅ Datos procesados:", todosLosDatos.length);
+                    console.log("Datos procesados:", todosLosDatos.length);
                     console.log("Ejemplo de datos:", todosLosDatos.slice(0, 3));
                     
-                    // OCULTAR MENSAJE DE CARGA
                     const loadingElement = document.getElementById('loadingChart');
                     if (loadingElement) loadingElement.style.display = 'none';
                     
                     cargarDatosGrafica();
                     actualizarTabla();
                 } else {
-                    console.log("No hay datos históricos");
+                    console.log("❌ No hay datos históricos");
                     mostrarDatosDeEjemploTemporal();
                 }
             } catch (error) {
@@ -234,21 +233,31 @@
 
         function cargarDatosGrafica() {
             if (todosLosDatos.length === 0) {
-                console.log("No hay datos para gráficas");
+                console.log("❌ No hay datos para gráficas");
                 mostrarDatosDeEjemploTemporal();
                 return;
             }
 
             const dias = parseInt(document.getElementById('selectRango').value);
+            const ahora = new Date();
             const fechaLimite = new Date();
-            fechaLimite.setDate(fechaLimite.getDate() - dias);
-            fechaLimite.setHours(0, 0, 0, 0); // Resetear a inicio del día
             
-            console.log("Fecha límite para filtrar:", fechaLimite);
-            console.log("Total de datos disponibles:", todosLosDatos.length);
+            let datosFiltrados;
 
-            // CORRECCIÓN PRINCIPAL: Usar el timestamp ya convertido
-            const datosFiltrados = todosLosDatos.filter(d => d.timestamp >= fechaLimite);
+            if (dias === 1) {
+                fechaLimite.setHours(ahora.getHours() - 24, ahora.getMinutes(), ahora.getSeconds(), ahora.getMilliseconds());
+                datosFiltrados = todosLosDatos.filter(d => d.timestamp >= fechaLimite);
+                console.log("Filtro 24h - Desde:", fechaLimite, "Hasta:", ahora);
+            } else {
+                fechaLimite.setDate(ahora.getDate() - dias);
+                fechaLimite.setHours(0, 0, 0, 0);
+                datosFiltrados = todosLosDatos.filter(d => {
+                    const fechaDato = new Date(d.timestamp);
+                    fechaDato.setHours(0, 0, 0, 0);
+                    return fechaDato >= fechaLimite;
+                });
+                console.log("Filtro múltiples días - Desde:", fechaLimite);
+            }
             
             console.log("Datos filtrados para gráfica:", datosFiltrados.length);
 
@@ -261,12 +270,11 @@
             crearGraficasConDatos(datosFiltrados);
         }
 
-        // NUEVA FUNCIÓN AUXILIAR MEJORADA
         function crearGraficasConDatos(datos) {
-            console.log("Creando gráficas con", datos.length, "datos");
+            console.log("🎨 Creando gráficas con", datos.length, "datos");
             
             if (datos.length === 0) {
-                console.log("No hay datos para crear gráficas");
+                console.log("❌ No hay datos para crear gráficas");
                 mostrarDatosDeEjemploTemporal();
                 return;
             }
@@ -278,7 +286,7 @@
             if (dias === 1) {
                 const datosPorHora = {};
                 datos.forEach(dato => {
-                    const hora = dato.hora.substring(0, 5); 
+                    const hora = dato.hora.substring(0, 5);
                     if (!datosPorHora[hora]) datosPorHora[hora] = [];
                     datosPorHora[hora].push(dato.temperatura);
                 });
@@ -303,7 +311,6 @@
                     return temps.reduce((a, b) => a + b, 0) / temps.length;
                 });
 
-                // Formatear fechas para mostrar
                 labels = labels.map(fecha => {
                     const [año, mes, dia] = fecha.split('-');
                     return `${dia}/${mes}`;
@@ -329,8 +336,6 @@
             if (tempChart) {
                 tempChart.destroy();
             }
-            
-            console.log("Creando gráfica principal...");
             
             tempChart = new Chart(ctx, {
                 type: 'line',
@@ -384,10 +389,8 @@
         }
 
         function crearGraficasPastel(datos) {
-            console.log("Creando gráficas de pastel");
             
             crearPastelRangos(datos.map(d => d.temperatura));
-            
             crearPastelEstados(datos.map(d => d.temperatura));
         }
 
@@ -400,13 +403,15 @@
             if (pieChartRangos) {
                 pieChartRangos.destroy();
             }
+
             const rangos = [
-               { min: 15, max: 20, label: '15-20°C', color: '#36A2EB' },    
-               { min: 20, max: 25, label: '20-25°C', color: '#4BC0C0' },    
-               { min: 25, max: 28, label: '25-28°C', color: '#FFCE56' },    
-               { min: 28, max: 32, label: '28-32°C', color: '#FF9F40' },    
-               { min: 32, max: 40, label: '32-40°C', color: '#FF6384' }     
+                { min: 15, max: 20, label: '15-20°C', color: '#36A2EB' },
+                { min: 20, max: 25, label: '20-25°C', color: '#4BC0C0' },
+                { min: 25, max: 28, label: '25-28°C', color: '#FFCE56' },
+                { min: 28, max: 32, label: '28-32°C', color: '#FF9F40' },
+                { min: 32, max: 40, label: '32-40°C', color: '#FF6384' }
             ];
+
             const conteoRangos = rangos.map(rango => {
                 const count = temperaturas.filter(temp => temp >= rango.min && temp < rango.max).length;
                 return {
@@ -472,9 +477,9 @@
             }
 
             const estados = [
-              { tipo: 'Frío', max: 20, color: '#36A2EB' },     
-              { tipo: 'Normal', min: 20, max: 28, color: '#4BC0C0' }, 
-              { tipo: 'Caluroso', min: 28, color: '#FF6384' } 
+                { tipo: 'Frío', max: 20, color: '#36A2EB' },
+                { tipo: 'Normal', min: 20, max: 28, color: '#4BC0C0' },
+                { tipo: 'Caluroso', min: 28, color: '#FF6384' }
             ];
 
             const conteoEstados = estados.map(estado => {
@@ -495,7 +500,7 @@
                 };
             });
 
-            console.log("Distribución por estados:", conteoEstados);
+            console.log("🌡️ Distribución por estados:", conteoEstados);
 
             pieChartEstados = new Chart(ctx, {
                 type: 'pie',
@@ -613,17 +618,15 @@
             }
         });
 
-        // INICIALIZAR
         document.addEventListener('DOMContentLoaded', function() {
             console.log("Iniciando aplicación...");
             cargarTodosLosDatos();
         });
 
-        // BACKUP POR SI FALLA LA CARGA
         setTimeout(function() {
             const loadingElement = document.getElementById('loadingChart');
             if (loadingElement && loadingElement.style.display !== 'none') {
-                console.log("Forzando visualización...");
+                console.log("Forzando visualización");
                 mostrarDatosDeEjemploTemporal();
             }
         }, 5000);
