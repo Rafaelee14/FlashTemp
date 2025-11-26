@@ -121,7 +121,7 @@
         
         <div class="filtros">
             <select id="selectRango" onchange="cargarDatosGrafica()">
-                <option value="1">Últimas 24h</option>
+                <option value="1">Hoy</option>
                 <option value="3">Últimos 3 días</option>
                 <option value="7">Última semana</option>
                 <option value="30">Último mes</option>
@@ -245,21 +245,16 @@
             let datosFiltrados;
 
             if (dias === 1) {
-                // ÚLTIMAS 24 HORAS: Mostrar solo datos de las últimas 24 horas exactas
-                fechaLimite.setTime(ahora.getTime() - (24 * 60 * 60 * 1000)); // Exactamente 24 horas atrás
+                // SOLO DÍA ACTUAL: Mostrar solo datos de hoy desde 00:00
+                fechaLimite.setHours(0, 0, 0, 0); // Inicio del día de hoy
                 
                 datosFiltrados = todosLosDatos.filter(d => {
-                    return d.timestamp >= fechaLimite && d.timestamp <= ahora;
+                    const fechaDato = new Date(d.timestamp);
+                    return fechaDato >= fechaLimite && fechaDato <= ahora;
                 });
                 
-                console.log("🕐 Filtro 24h - Desde:", fechaLimite, "Hasta:", ahora);
-                console.log("📊 Datos encontrados en 24h:", datosFiltrados.length);
-                
-                // Verificar las fechas de los datos filtrados
-                if (datosFiltrados.length > 0) {
-                    const fechasUnicas = [...new Set(datosFiltrados.map(d => d.fecha))];
-                    console.log("📅 Fechas en datos filtrados:", fechasUnicas);
-                }
+                console.log("📅 Filtro día actual - Desde:", fechaLimite, "Hasta:", ahora);
+                console.log("📊 Datos de hoy:", datosFiltrados.length);
                 
             } else {
                 // MÚLTIPLES DÍAS: Mostrar datos completos de los días
@@ -298,7 +293,7 @@
             let promedios = [];
 
             if (dias === 1) {
-                // Agrupar por hora para últimas 24h - SOLO HORAS CON DATOS
+                // Agrupar por hora para HOY - SOLO HORAS CON DATOS
                 const datosPorHora = {};
                 datos.forEach(dato => {
                     const hora = dato.hora.substring(0, 5);
@@ -313,7 +308,7 @@
                     return temps.reduce((a, b) => a + b, 0) / temps.length;
                 });
 
-                console.log("🕐 Horas con datos:", labels);
+                console.log("🕐 Horas con datos HOY:", labels);
 
             } else {
                 // Agrupar por fecha para múltiples días
