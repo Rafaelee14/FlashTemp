@@ -213,8 +213,8 @@
                     });
                     
                     todosLosDatos.sort((a, b) => b.timestamp - a.timestamp);
-                    console.log("Datos procesados:", todosLosDatos.length);
-                    console.log("Ejemplo de datos:", todosLosDatos.slice(0, 3));
+                    console.log("✅ Datos procesados:", todosLosDatos.length);
+                    console.log("📅 Ejemplo de datos:", todosLosDatos.slice(0, 3));
                     
                     const loadingElement = document.getElementById('loadingChart');
                     if (loadingElement) loadingElement.style.display = 'none';
@@ -245,10 +245,24 @@
             let datosFiltrados;
 
             if (dias === 1) {
-                fechaLimite.setHours(ahora.getHours() - 24, ahora.getMinutes(), ahora.getSeconds(), ahora.getMilliseconds());
-                datosFiltrados = todosLosDatos.filter(d => d.timestamp >= fechaLimite);
-                console.log("Filtro 24h - Desde:", fechaLimite, "Hasta:", ahora);
+                // ÚLTIMAS 24 HORAS: Mostrar solo datos de las últimas 24 horas exactas
+                fechaLimite.setTime(ahora.getTime() - (24 * 60 * 60 * 1000)); // Exactamente 24 horas atrás
+                
+                datosFiltrados = todosLosDatos.filter(d => {
+                    return d.timestamp >= fechaLimite && d.timestamp <= ahora;
+                });
+                
+                console.log("🕐 Filtro 24h - Desde:", fechaLimite, "Hasta:", ahora);
+                console.log("📊 Datos encontrados en 24h:", datosFiltrados.length);
+                
+                // Verificar las fechas de los datos filtrados
+                if (datosFiltrados.length > 0) {
+                    const fechasUnicas = [...new Set(datosFiltrados.map(d => d.fecha))];
+                    console.log("📅 Fechas en datos filtrados:", fechasUnicas);
+                }
+                
             } else {
+                // MÚLTIPLES DÍAS: Mostrar datos completos de los días
                 fechaLimite.setDate(ahora.getDate() - dias);
                 fechaLimite.setHours(0, 0, 0, 0);
                 datosFiltrados = todosLosDatos.filter(d => {
@@ -256,13 +270,13 @@
                     fechaDato.setHours(0, 0, 0, 0);
                     return fechaDato >= fechaLimite;
                 });
-                console.log("Filtro múltiples días - Desde:", fechaLimite);
+                console.log("📅 Filtro múltiples días - Desde:", fechaLimite);
             }
             
-            console.log("Datos filtrados para gráfica:", datosFiltrados.length);
+            console.log("📈 Datos filtrados para gráfica:", datosFiltrados.length);
 
             if (datosFiltrados.length === 0) {
-                console.log("No hay datos filtrados - mostrando todos los datos disponibles");
+                console.log("⚠️ No hay datos filtrados - mostrando todos los datos disponibles");
                 crearGraficasConDatos(todosLosDatos);
                 return;
             }
@@ -284,6 +298,7 @@
             let promedios = [];
 
             if (dias === 1) {
+                // Agrupar por hora para últimas 24h - SOLO HORAS CON DATOS
                 const datosPorHora = {};
                 datos.forEach(dato => {
                     const hora = dato.hora.substring(0, 5);
@@ -291,11 +306,14 @@
                     datosPorHora[hora].push(dato.temperatura);
                 });
 
+                // OBTENER SOLO LAS HORAS QUE TIENEN DATOS Y ORDENARLAS
                 labels = Object.keys(datosPorHora).sort();
                 promedios = labels.map(hora => {
                     const temps = datosPorHora[hora];
                     return temps.reduce((a, b) => a + b, 0) / temps.length;
                 });
+
+                console.log("🕐 Horas con datos:", labels);
 
             } else {
                 // Agrupar por fecha para múltiples días
@@ -317,8 +335,8 @@
                 });
             }
 
-            console.log("Labels:", labels);
-            console.log("Promedios:", promedios);
+            console.log("🏷️ Labels:", labels);
+            console.log("📊 Promedios:", promedios);
             
             crearGraficaPrincipal(labels, promedios);
             crearGraficasPastel(datos);
@@ -327,7 +345,7 @@
         function crearGraficaPrincipal(labels, datos) {
             const canvas = document.getElementById('tempChart');
             if (!canvas) {
-                console.log("Canvas no encontrado");
+                console.log("❌ Canvas no encontrado");
                 return;
             }
             
@@ -336,6 +354,8 @@
             if (tempChart) {
                 tempChart.destroy();
             }
+            
+            console.log("🔄 Creando gráfica principal...");
             
             tempChart = new Chart(ctx, {
                 type: 'line',
@@ -385,10 +405,11 @@
                 }
             });
             
-            console.log("Gráfica principal creada");
+            console.log("✅ Gráfica principal creada");
         }
 
         function crearGraficasPastel(datos) {
+            console.log("🥧 Creando gráficas de pastel...");
             
             crearPastelRangos(datos.map(d => d.temperatura));
             crearPastelEstados(datos.map(d => d.temperatura));
@@ -422,7 +443,7 @@
                 };
             });
 
-            console.log("Distribución por rangos:", conteoRangos);
+            console.log("📊 Distribución por rangos:", conteoRangos);
 
             pieChartRangos = new Chart(ctx, {
                 type: 'pie',
@@ -619,14 +640,14 @@
         });
 
         document.addEventListener('DOMContentLoaded', function() {
-            console.log("Iniciando aplicación...");
+            console.log("🚀 Iniciando aplicación...");
             cargarTodosLosDatos();
         });
 
         setTimeout(function() {
             const loadingElement = document.getElementById('loadingChart');
             if (loadingElement && loadingElement.style.display !== 'none') {
-                console.log("Forzando visualización");
+                console.log("⏰ Forzando visualización...");
                 mostrarDatosDeEjemploTemporal();
             }
         }, 5000);
